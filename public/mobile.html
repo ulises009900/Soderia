@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carga de Datos - Soderia</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="mobile-container">
+    <header>
+      <h1>📱 Carga de Datos</h1>
+      <div class="user-info">
+        <input type="text" id="username" placeholder="Tu nombre" maxlength="20">
+        <span id="status" class="status disconnected">Desconectado</span>
+      </div>
+    </header>
+
+    <main>
+      <!-- Formulario de Datos -->
+      <section class="form-section">
+        <h2>Enviar Información</h2>
+
+        <!-- Tipo de Datos -->
+        <div class="form-group">
+          <label>Tipo de datos:</label>
+          <select id="dataType">
+            <option value="text">📝 Texto</option>
+            <option value="command">⚙️ Comando</option>
+            <option value="location">📍 Ubicación</option>
+            <option value="image">🖼️ Imagen (URL)</option>
+          </select>
+        </div>
+
+        <!-- Contenido -->
+        <div class="form-group">
+          <label>Contenido:</label>
+          <textarea id="content" placeholder="Escribe aquí..." rows="4"></textarea>
+        </div>
+
+        <!-- Coordenadas -->
+        <div class="form-group">
+          <label>Obtener Ubicación:</label>
+          <button id="getLocationBtn" class="btn btn-secondary">📍 Obtener GPS</button>
+          <div id="locationDisplay" class="location-display"></div>
+        </div>
+
+        <!-- Botón Enviar -->
+        <button id="submitBtn" class="btn btn-primary full-width">Enviar Datos</button>
+      </section>
+
+      <!-- Historial Reciente -->
+      <section class="history-section">
+        <h2>Tus Últimas Cargas</h2>
+        <div id="historyContainer" class="history-list">
+          <p class="empty-state">Sin datos aún...</p>
+        </div>
+      </section>
+
+      <!-- Notificaciones -->
+      <div id="notification" class="notification"></div>
+    </main>
+
+    <footer>
+      <button onclick="window.location.href='/'">← Volver</button>
+    </footer>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="js/mobile.js"></script>
+</body>
+</html>

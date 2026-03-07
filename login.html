@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Soderia</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="login-card">
+        <h1 id="formTitle">Iniciar Sesión</h1>
+        <form id="authForm">
+            <div class="form-group">
+                <label>Usuario</label>
+                <input type="text" id="username" required placeholder="Ej: admin">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="password" required placeholder="******">
+            </div>
+            <button type="submit" class="btn-login" id="submitBtn">Ingresar</button>
+        </form>
+        <p id="errorMsg"></p>
+        <a class="toggle-link" id="toggleMode">¿No tienes cuenta? Regístrate</a>
+    </div>
+
+    <script>
+        const form = document.getElementById('authForm');
+        const toggleLink = document.getElementById('toggleMode');
+        const formTitle = document.getElementById('formTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        let isLogin = true;
+
+        toggleLink.addEventListener('click', () => {
+            isLogin = !isLogin;
+            formTitle.textContent = isLogin ? 'Iniciar Sesión' : 'Registrarse';
+            submitBtn.textContent = isLogin ? 'Ingresar' : 'Crear Cuenta';
+            toggleLink.textContent = isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión';
+            errorMsg.style.display = 'none';
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isLogin ? '/api/login' : '/api/register';
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    // Guardar sesión y redirigir
+                    localStorage.setItem('soderia_username', data.user.username);
+                    localStorage.setItem('soderia_role', data.user.role);
+                    
+                    if (data.user.role === 'desktop') {
+                        window.location.href = '/desktop';
+                    } else {
+                        window.location.href = '/mobile';
+                    }
+                } else {
+                    errorMsg.textContent = data.error;
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Error de conexión';
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
