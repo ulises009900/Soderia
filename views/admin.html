@@ -6,6 +6,8 @@
     <title>Administración - Sodería</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/extra-style.css">
+    <link rel="stylesheet" href="/css/responsive-tables.css">
+    <link rel="stylesheet" href="/css/enhancements.css">
     <style>
         .status-active { color: green; font-weight: bold; }
         .status-inactive { color: red; font-weight: bold; }
@@ -417,19 +419,36 @@
         async function toggleCliente(id, currentActivo) {
             const action = currentActivo ? 'desactivar' : 'activar';
             if (!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este cliente?`)) return;
-            
+
             try {
+                // Primero obtener los datos actuales del cliente
+                const getRes = await fetch(`/api/clientes/${id}`);
+                if (!getRes.ok) {
+                    const errorText = await getRes.text();
+                    alert(`Error al obtener datos: ${getRes.status} - ${errorText}`);
+                    return;
+                }
+                const cliente = await getRes.json();
+
+                // Enviar todos los datos con el campo activo modificado
                 const res = await fetch(`/api/clientes/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ activo: !currentActivo })
+                    body: JSON.stringify({
+                        nombre: cliente.nombre,
+                        direccion: cliente.direccion || '',
+                        telefono: cliente.telefono || '',
+                        email: cliente.email || '',
+                        activo: !currentActivo
+                    })
                 });
-                
+
                 if (res.ok) {
                     alert(`✓ Cliente ${action}do correctamente`);
                     loadClientes();
                 } else {
-                    alert(`Error al ${action} cliente`);
+                    const errorData = await res.json();
+                    alert(`Error: ${errorData.error || 'No se pudo actualizar'}`);
                 }
             } catch (err) {
                 console.error('Error:', err);
@@ -481,19 +500,36 @@
         async function toggleProducto(id, currentActivo) {
             const action = currentActivo ? 'desactivar' : 'activar';
             if (!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este producto?`)) return;
-            
+
             try {
+                // Primero obtener los datos actuales del producto
+                const getRes = await fetch(`/api/productos/${id}`);
+                if (!getRes.ok) {
+                    const errorText = await getRes.text();
+                    alert(`Error al obtener datos: ${getRes.status} - ${errorText}`);
+                    return;
+                }
+                const producto = await getRes.json();
+
+                // Enviar todos los datos con el campo activo modificado
                 const res = await fetch(`/api/productos/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ activo: !currentActivo })
+                    body: JSON.stringify({
+                        nombre: producto.nombre,
+                        descripcion: producto.descripcion || '',
+                        precio_unitario: producto.precio_unitario,
+                        stock: producto.stock,
+                        activo: !currentActivo
+                    })
                 });
-                
+
                 if (res.ok) {
                     alert(`✓ Producto ${action}do correctamente`);
                     loadProductos();
                 } else {
-                    alert(`Error al ${action} producto`);
+                    const errorData = await res.json();
+                    alert(`Error: ${errorData.error || 'No se pudo actualizar'}`);
                 }
             } catch (err) {
                 console.error('Error:', err);
@@ -622,5 +658,6 @@
         // Cargar clientes por defecto
         loadClientes();
     </script>
+    <script src="/js/responsive-handler.js"></script>
 </body>
 </html>

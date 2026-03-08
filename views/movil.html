@@ -6,6 +6,8 @@
     <title>Modo Móvil - Carga de Datos</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/extra-style.css">
+    <link rel="stylesheet" href="/css/responsive-tables.css">
+    <link rel="stylesheet" href="/css/enhancements.css">
 </head>
 <body>
     <div class="container">
@@ -14,7 +16,16 @@
             <a href="/logout" class="logout-link">Cerrar Sesión</a>
         </header>
         <main>
-            <section class="form-section">
+            <!-- Navegación Tabs -->
+            <nav style="margin-bottom:20px; border-bottom: 2px solid #ddd;">
+                <button id="btnVenta" class="btn btn-primary" onclick="mostrarVenta()" style="margin-right:5px;">📝 Cargar Venta</button>
+                <button id="btnPagoDeuda" class="btn btn-secondary" onclick="mostrarPagoDeuda()" style="margin-right:5px;">💳 Pagar Deuda</button>
+                <button id="btnHistorialPagos" class="btn btn-secondary" onclick="mostrarHistorialPagos()" style="margin-right:5px;">📊 Historial Pagos</button>
+                <a href="/selector" class="btn btn-secondary" style="text-decoration:none;">← Volver</a>
+            </nav>
+
+            <!-- Sección Cargar Venta -->
+            <section id="ventaSection" class="form-section" style="display:block;">
                 <h2>Cargar Venta</h2>
                 
                 <!-- Búsqueda de Cliente -->
@@ -32,7 +43,9 @@
                 <!-- Cliente Info (después de seleccionar) -->
                 <div id="clienteInfo" style="margin-top:10px; padding:10px; background:#f0f0f0; border-radius:5px; display:none;">
                     <strong>Cliente:</strong> <span id="clienteSelected"></span><br>
-                    <strong>Dirección:</strong> <span id="direccionSelected"></span>
+                    <strong>Dirección:</strong> <span id="direccionSelected"></span><br>
+                    <strong style="color:#d9534f;">Deuda Actual:</strong> <span id="deudaActual" style="color:#d9534f; font-weight:bold;">$0.00</span>
+                    <button id="btnPagarDeuda" onclick="mostrarPagoRapido()" style="float:right; background:#28a745; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer; display:none;">💳 Pagar</button>
                 </div>
 
                 <!-- Dirección (campo en formulario) -->
@@ -41,13 +54,76 @@
                     <input type="text" id="direccionForm" readonly placeholder="Se llena automáticamente">
                 </div>
                 
+                <!-- Pago Rápido de Deuda -->
+                <div id="pagoRapidoSection" style="margin:15px 0; padding:15px; background:#fff3cd; border:2px solid #ffc107; border-radius:5px; display:none;">
+                    <h3 style="margin-top:0; color:#856404;">💳 Pago de Deuda</h3>
+                    
+                    <!-- Opciones de Pago -->
+                    <div style="margin-bottom:15px;">
+                        <button type="button" onclick="pagarDeudaCompleta()" style="background:#28a745; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer; margin-right:10px;">Pagar Todo ($<span id="deudaCompleta">0.00</span>)</button>
+                        <button type="button" onclick="mostrarPagoParcial()" style="background:#007bff; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer; margin-right:10px;">Pagar Parte</button>
+                        <button type="button" onclick="mostrarPagoMixto()" style="background:#6f42c1; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer;">Pago Mixto</button>
+                    </div>
+                    
+                    <!-- Formulario de Pago Parcial -->
+                    <div id="pagoParcialForm" style="display:none; margin-top:15px;">
+                        <h4>Seleccionar Ventas a Pagar</h4>
+                        <div id="ventasParaPagoParcial" style="margin-bottom:10px; max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:10px; background:white; border-radius:3px;">
+                            <!-- Las ventas se cargarán aquí -->
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label>Total Seleccionado: $<span id="totalPagoParcial" style="font-weight:bold; color:#d9534f;">0.00</span></label>
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label>Forma de Pago:</label>
+                            <select id="formaPagoParcial" style="width:100%; padding:5px;">
+                                <option value="efectivo">Efectivo</option>
+                                <option value="transferencia">Transferencia</option>
+                                <option value="tarjeta">Tarjeta</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label>Observaciones:</label>
+                            <textarea id="observacionesParcial" rows="2" style="width:100%; padding:5px;" placeholder="Observaciones opcionales"></textarea>
+                        </div>
+                        <button type="button" onclick="aplicarPagoParcial()" style="background:#28a745; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer; width:100%;">Aplicar Pago Parcial</button>
+                    </div>
+                    
+                    <!-- Formulario de Pago Mixto -->
+                    <div id="pagoMixtoForm" style="display:none; margin-top:15px; padding:10px; background:#f8f9fa; border-radius:3px;">
+                        <h4>Seleccionar Ventas a Pagar</h4>
+                        <div id="ventasParaPagoMixto" style="margin-bottom:10px; max-height:200px; overflow-y:auto; border:1px solid #ddd; padding:10px; background:white; border-radius:3px;">
+                            <!-- Las ventas se cargarán aquí -->
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label>Total Seleccionado: $<span id="totalPagoMixto" style="font-weight:bold; color:#d9534f;">0.00</span></label>
+                        </div>
+                        <h4>Métodos de Pago</h4>
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div style="flex:1;">
+                                <label>Efectivo:</label>
+                                <input type="number" id="montoEfectivo" step="0.01" min="0" style="width:100%; padding:5px;" placeholder="0.00">
+                            </div>
+                            <div style="flex:1;">
+                                <label>Transferencia:</label>
+                                <input type="number" id="montoTransferencia" step="0.01" min="0" style="width:100%; padding:5px;" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label>Observaciones:</label>
+                            <textarea id="observacionesMixto" rows="2" style="width:100%; padding:5px;" placeholder="Observaciones opcionales"></textarea>
+                        </div>
+                        <button type="button" onclick="aplicarPagoMixto()" style="background:#6f42c1; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer; width:100%;">Aplicar Pago Mixto</button>
+                    </div>
+                </div>
+                
                 <!-- Agregar Productos -->
                 <h3 style="margin-top:20px; margin-bottom:10px;">Agregar Productos</h3>
                 
                 <!-- Producto -->
                 <div class="form-group">
                     <label>Producto:</label>
-                    <select id="producto">
+                    <select id="producto" onchange="actualizarMontoAutomatico()">
                         <option value="">Selecciona un producto...</option>
                     </select>
                 </div>
@@ -55,13 +131,13 @@
                 <!-- Cantidad -->
                 <div class="form-group">
                     <label>Cantidad:</label>
-                    <input type="number" id="cantidad" min="1" value="1">
+                    <input type="number" id="cantidad" min="1" value="1" onchange="actualizarMontoAutomatico()">
                 </div>
                 
-                <!-- Monto -->
+                <!-- Monto (Solo lectura) -->
                 <div class="form-group">
                     <label>Monto ($):</label>
-                    <input type="number" id="monto" step="0.01" min="0">
+                    <input type="number" id="monto" step="0.01" min="0" readonly style="background-color:#f5f5f5; cursor:not-allowed;">
                 </div>
                 
                 <!-- Botón Agregar Producto -->
@@ -111,6 +187,78 @@
                 <a href="/selector" style="display:block; margin-top:20px; text-align:center;">← Volver al selector</a>
             </section>
             
+            <!-- Sección Pagar Deuda -->
+            <section id="pagoDeudaSection" class="form-section" style="display:none;">
+                <h2>Pagar Deuda</h2>
+                <p>Esta funcionalidad ahora está integrada en la pantalla principal de ventas.</p>
+                <a href="#" onclick="mostrarVenta(); return false;" style="color:#007bff;">← Volver a Cargar Venta</a>
+            </section>
+            
+            <!-- Sección Historial de Pagos -->
+            <section id="historialPagosSection" class="form-section" style="display:none;">
+                <h2>📊 Historial de Pagos</h2>
+                
+                <!-- Filtros -->
+                <div style="margin-bottom:15px; display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label>Buscar Cliente:</label>
+                        <input type="text" id="filterClientePago" placeholder="Nombre del cliente..." style="width:100%; padding:5px;">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Desde Fecha:</label>
+                        <input type="date" id="filterFechaDesde" style="width:100%; padding:5px;">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Hasta Fecha:</label>
+                        <input type="date" id="filterFechaHasta" style="width:100%; padding:5px;">
+                    </div>
+                </div>
+                
+                <button onclick="cargarHistorialPagos()" style="background:#007bff; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer; margin-bottom:15px;">🔍 Filtrar</button>
+                
+                <!-- Tabla de Pagos -->
+                <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                    <thead>
+                        <tr style="background:#f0f0f0;">
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">Cliente</th>
+                            <th style="padding:8px; text-align:center; border-bottom:2px solid #ddd;">Monto</th>
+                            <th style="padding:8px; text-align:center; border-bottom:2px solid #ddd;">Forma Pago</th>
+                            <th style="padding:8px; text-align:center; border-bottom:2px solid #ddd;">Fecha</th>
+                            <th style="padding:8px; text-align:left; border-bottom:2px solid #ddd;">Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaHistorialPagos">
+                        <tr>
+                            <td colspan="5" style="padding:20px; text-align:center; color:#999;">Cargando historial de pagos...</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#f9f9f9; font-weight:bold;">
+                            <td style="padding:10px; text-align:right; border-top:2px solid #ddd;">TOTAL PAGADO:</td>
+                            <td style="padding:10px; text-align:center; border-top:2px solid #ddd;">$<span id="totalPagado">0.00</span></td>
+                            <td colspan="3" style="padding:10px; border-top:2px solid #ddd;"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <!-- Resumen de Control -->
+                <div style="margin-top:20px; padding:15px; background:#e8f5e9; border-radius:5px;">
+                    <h3 style="margin-top:0;">📈 Resumen de Control</h3>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                        <div>
+                            <strong>Total Pagos Registrados:</strong><br>
+                            <span id="totalPagosRegistrados" style="font-size:18px; color:#2e7d32;">0</span>
+                        </div>
+                        <div>
+                            <strong>Total Pagado (Período):</strong><br>
+                            <span id="totalMontoPeriodo" style="font-size:18px; color:#2e7d32; font-weight:bold;">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="#" onclick="mostrarVenta(); return false;" style="display:block; margin-top:20px; text-align:center; color:#007bff;">← Volver a Cargar Venta</a>
+            </section>
+            
             <!-- Historial de Ventas -->
             <section class="history-section" style="margin-top:30px;">
                 <h2>Historial de Ventas</h2>
@@ -129,12 +277,45 @@
                     <tbody></tbody>
                 </table>
             </section>
+
         </main>
     </div>
 
     <script>
         let selectedClient = null;
         let productosAgregados = [];
+        let ventasPendientesCliente = []; // Almacenar las ventas pendientes del cliente
+
+        // Funciones para cambiar de sección
+        function mostrarVenta() {
+            document.getElementById('ventaSection').style.display = 'block';
+            document.getElementById('pagoDeudaSection').style.display = 'none';
+            document.getElementById('historialPagosSection').style.display = 'none';
+            document.getElementById('pagoRapidoSection').style.display = 'none';
+            document.getElementById('btnVenta').className = 'btn btn-primary';
+            document.getElementById('btnPagoDeuda').className = 'btn btn-secondary';
+            document.getElementById('btnHistorialPagos').className = 'btn btn-secondary';
+        }
+        
+        function mostrarPagoDeuda() {
+            mostrarVenta();
+            // Si hay un cliente seleccionado, mostrar la sección de pago
+            const clienteId = document.getElementById('clienteId').value;
+            if (clienteId) {
+                mostrarPagoRapido();
+            }
+        }
+        
+        function mostrarHistorialPagos() {
+            document.getElementById('ventaSection').style.display = 'none';
+            document.getElementById('pagoDeudaSection').style.display = 'none';
+            document.getElementById('historialPagosSection').style.display = 'block';
+            document.getElementById('btnVenta').className = 'btn btn-secondary';
+            document.getElementById('btnPagoDeuda').className = 'btn btn-secondary';
+            document.getElementById('btnHistorialPagos').className = 'btn btn-primary';
+            // Cargar historial inmediatamente
+            cargarHistorialPagos();
+        }
 
         // Cargar productos al iniciar
         async function loadProductos() {
@@ -157,6 +338,17 @@
             } catch (err) {
                 console.error('Error cargando productos:', err);
             }
+        }
+
+        // Actualizar monto automáticamente
+        function actualizarMontoAutomatico() {
+            const productoSelect = document.getElementById('producto');
+            const cantidad = parseFloat(document.getElementById('cantidad').value) || 0;
+            const selectedOption = productoSelect.options[productoSelect.selectedIndex];
+            const precioUnitario = parseFloat(selectedOption.dataset.precio) || 0;
+            
+            const monto = precioUnitario * cantidad;
+            document.getElementById('monto').value = monto.toFixed(2);
         }
 
         // Búsqueda de clientes
@@ -203,7 +395,41 @@
             document.getElementById('direccionForm').value = direccion || '';
             document.getElementById('clienteInfo').style.display = 'block';
             document.getElementById('direccionFormGroup').style.display = 'block';
+            
+            // Cargar deuda del cliente
+            cargarDeudaCliente(id);
         };
+        
+        // Cargar deuda del cliente
+        async function cargarDeudaCliente(clienteId) {
+            try {
+                const res = await fetch(`/api/deuda/${clienteId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const deudaElement = document.getElementById('deudaActual');
+                    if (data.deuda > 0) {
+                        deudaElement.textContent = `$${data.deuda.toFixed(2)}`;
+                        deudaElement.style.color = '#d9534f';
+                        // Mostrar sección de pago rápido si hay deuda
+                        mostrarPagoRapido();
+                    } else {
+                        deudaElement.textContent = 'Sin deuda';
+                        deudaElement.style.color = '#5cb85c';
+                        // Ocultar sección de pago rápido si no hay deuda
+                        document.getElementById('pagoRapidoSection').style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('deudaActual').textContent = 'Error al cargar';
+                    document.getElementById('deudaActual').style.color = '#f0ad4e';
+                    document.getElementById('pagoRapidoSection').style.display = 'none';
+                }
+            } catch (err) {
+                console.error('Error cargando deuda:', err);
+                document.getElementById('deudaActual').textContent = 'Error';
+                document.getElementById('deudaActual').style.color = '#f0ad4e';
+                document.getElementById('pagoRapidoSection').style.display = 'none';
+            }
+        }
 
         // Agregar producto a la lista
         document.getElementById('agregarProductoBtn').addEventListener('click', () => {
@@ -215,7 +441,7 @@
             const productoSelect = document.getElementById('producto');
             const producto = productoSelect.value;
             const cantidad = parseFloat(document.getElementById('cantidad').value) || 0;
-            let monto = parseFloat(document.getElementById('monto').value) || 0;
+            const monto = parseFloat(document.getElementById('monto').value) || 0;
             
             if (!producto) {
                 alert('Por favor selecciona un producto');
@@ -225,14 +451,6 @@
             if (cantidad <= 0) {
                 alert('Por favor ingresa una cantidad válida');
                 return;
-            }
-            
-            // Si no se especificó monto, calcularlo automáticamente
-            if (monto === 0) {
-                const selectedOption = productoSelect.options[productoSelect.selectedIndex];
-                const precioUnitario = parseFloat(selectedOption.dataset.precio) || 0;
-                monto = precioUnitario * cantidad;
-                document.getElementById('monto').value = monto.toFixed(2);
             }
             
             // Agregar a la lista
@@ -322,7 +540,7 @@
             return map[forma] || forma;
         }
 
-        // Guardar venta (todos los productos)
+        // Guardar venta (todos los productos en una sola petición)
         document.getElementById('submitBtn').addEventListener('click', async () => {
             if (!selectedClient) {
                 alert('Por favor selecciona un cliente');
@@ -335,70 +553,651 @@
             }
             
             const formaPago = document.getElementById('formaPago').value;
-            const saldo = parseFloat(document.getElementById('saldo').value) || 0;
             const pagado = formaPago === 'pago' ? 1 : 0;
             
-            // Guardar cada producto
-            let guardados = 0;
-            let errores = 0;
+            // Preparar data para enviar
+            const data = {
+                cliente_id: selectedClient.id,
+                cliente_nombre: selectedClient.nombre,
+                direccion: selectedClient.direccion,
+                productos: productosAgregados,
+                forma_pago: formaPago,
+                pagado: pagado === 1
+            };
             
-            for (const producto of productosAgregados) {
-                const data = {
-                    cliente_id: selectedClient.id,
-                    cliente_nombre: selectedClient.nombre,
-                    dirección: selectedClient.direccion,
-                    producto: producto.producto,
-                    cantidad: producto.cantidad,
-                    monto: producto.monto,
-                    forma_pago: formaPago,
-                    saldo,
-                    pagado
-                };
+            try {
+                const res = await fetch('/api/ventas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
                 
-                try {
-                    const res = await fetch('/api/data', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                    
-                    if (res.ok) {
-                        guardados++;
-                    } else {
-                        errores++;
-                    }
-                } catch (err) {
-                    console.error('Error:', err);
-                    errores++;
+                if (res.ok) {
+                    const result = await res.json();
+                    alert(`✓ Venta guardada correctamente con ${result.productos_guardados} producto(s)`);
+                    // Limpiar formulario
+                    productosAgregados = [];
+                    document.getElementById('clienteSearch').value = '';
+                    document.getElementById('direccionForm').value = '';
+                    document.getElementById('producto').value = '';
+                    document.getElementById('cantidad').value = '1';
+                    document.getElementById('monto').value = '';
+                    document.getElementById('formaPago').value = 'pago';
+                    document.getElementById('clienteInfo').style.display = 'none';
+                    document.getElementById('direccionFormGroup').style.display = 'none';
+                    document.getElementById('productosBody').innerHTML = '';
+                    document.getElementById('totalMonto').innerText = '0.00';
+                    selectedClient = null;
+                    // Recargar historial
+                    loadVentas();
+                } else {
+                    const error = await res.json();
+                    alert('Error al guardar venta: ' + error.error);
                 }
-            }
-            
-            if (errores === 0) {
-                alert(`✓ ${guardados} producto(s) guardado(s) correctamente`);
-                // Limpiar formulario
-                productosAgregados = [];
-                document.getElementById('clienteSearch').value = '';
-                document.getElementById('direccionForm').value = '';
-                document.getElementById('producto').value = '';
-                document.getElementById('cantidad').value = '1';
-                document.getElementById('monto').value = '';
-                document.getElementById('saldo').value = '0';
-                document.getElementById('formaPago').value = 'pago';
-                document.getElementById('clienteInfo').style.display = 'none';
-                document.getElementById('direccionFormGroup').style.display = 'none';
-                document.getElementById('productosBody').innerHTML = '';
-                document.getElementById('totalMonto').innerText = '0.00';
-                selectedClient = null;
-                // Recargar historial
-                loadVentas();
-            } else {
-                alert(`⚠️ Se guardaron ${guardados} producto(s), pero hubo ${errores} error(es)`);
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
             }
         });
 
-        // Cargar datos al abrir la página
-        loadProductos();
-        loadVentas();
+        // Seleccionar o deseleccionar todas las ventas
+        function seleccionarTodasVentas() {
+            const checkboxes = document.querySelectorAll('.venta-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = !allChecked;
+            });
+            
+            calcularTotalSeleccionado();
+        }
+        
+        // Calcular total de ventas seleccionadas
+        function calcularTotalSeleccionado() {
+            const checkboxes = document.querySelectorAll('.venta-checkbox:checked');
+            let total = 0;
+            
+            checkboxes.forEach(checkbox => {
+                total += parseFloat(checkbox.dataset.monto);
+            });
+            
+            const totalElement = document.getElementById('montoTotalSeleccionado');
+            const totalDiv = document.getElementById('totalSeleccionado');
+            
+            if (total > 0) {
+                totalElement.textContent = `$${total.toFixed(2)}`;
+                totalDiv.style.display = 'block';
+                // Actualizar el campo de monto automáticamente
+                document.getElementById('montoPago').value = total.toFixed(2);
+            } else {
+                totalDiv.style.display = 'none';
+                document.getElementById('montoPago').value = '';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProductos();
+            loadVentas();
+            setupClientePagoSearch();
+        });
+        
+        // Búsqueda de clientes para pago de deuda
+        function setupClientePagoSearch() {
+            document.getElementById('clientePagoSearch').addEventListener('input', async (e) => {
+                const query = e.target.value.trim();
+                const resultsDiv = document.getElementById('clientePagoResults');
+                
+                if (query.length < 1) {
+                    resultsDiv.innerHTML = '';
+                    return;
+                }
+                
+                try {
+                    const res = await fetch(`/api/clientes?q=${encodeURIComponent(query)}`);
+                    const clientes = await res.json();
+                    
+                    if (clientes.length === 0) {
+                        resultsDiv.innerHTML = '<div style="padding:8px;color:#999;">No hay coincidencias</div>';
+                        return;
+                    }
+                    
+                    resultsDiv.innerHTML = clientes.map(c => 
+                        `<div class="result-item" onclick="selectClientePago(${c.id}, '${c.nombre}')" style="padding:8px;cursor:pointer;border-bottom:1px solid #ddd;">
+                            <strong>${c.nombre}</strong><br>
+                            <small style="color:#666;">${c.dirección || 'Sin dirección'}</small>
+                        </div>`
+                    ).join('');
+                } catch (err) {
+                    console.error('Error buscando clientes:', err);
+                    resultsDiv.innerHTML = '<div style="padding:8px;color:red;">Error al buscar</div>';
+                }
+            });
+        }
+        
+        // Seleccionar cliente para pago
+        window.selectClientePago = async (id, nombre) => {
+            document.getElementById('clientePagoId').value = id;
+            document.getElementById('clientePagoSearch').value = nombre;
+            document.getElementById('clientePagoResults').innerHTML = '';
+            document.getElementById('clientePagoNombre').innerText = nombre;
+            
+            // Limpiar selecciones anteriores
+            document.getElementById('totalSeleccionado').style.display = 'none';
+            document.getElementById('montoPago').value = '';
+            
+            // Cargar deuda y ventas pendientes
+            try {
+                const [deudaRes, ventasRes] = await Promise.all([
+                    fetch(`/api/deuda/${id}`),
+                    fetch(`/api/ventas-pendientes/${id}`)
+                ]);
+                
+                if (deudaRes.ok) {
+                    const data = await deudaRes.json();
+                    document.getElementById('deudaPendiente').textContent = `$${data.deuda.toFixed(2)}`;
+                    document.getElementById('ultimaActualizacion').textContent = data.ultima_actualizacion || 'N/A';
+                    document.getElementById('clientePagoInfo').style.display = 'block';
+                    
+                    if (data.deuda > 0) {
+                        document.getElementById('formPagoDeuda').style.display = 'block';
+                        // Establecer el máximo permitido para el pago
+                        document.getElementById('montoPago').max = data.deuda;
+                        document.getElementById('montoPago').placeholder = `Selecciona ventas para calcular el total`;
+                    } else {
+                        document.getElementById('formPagoDeuda').style.display = 'none';
+                        document.getElementById('ventasPendientes').style.display = 'none';
+                        alert('Este cliente no tiene deuda pendiente');
+                        return;
+                    }
+                }
+                
+                // Cargar ventas pendientes
+                if (ventasRes.ok) {
+                    const ventasData = await ventasRes.json();
+                    ventasPendientesCliente = ventasData.ventas || [];
+                    
+                    if (ventasPendientesCliente.length > 0) {
+                        const listaDiv = document.getElementById('listaVentasPendientes');
+                        listaDiv.innerHTML = ventasPendientesCliente.map((v, index) => 
+                            `<div style="padding:8px; border-bottom:1px solid #eee; background:#f9f9f9; margin-bottom:5px; border-radius:3px;">
+                                <label style="display:flex; align-items:center; cursor:pointer;">
+                                    <input type="checkbox" class="venta-checkbox" data-index="${index}" data-monto="${v.monto}" onchange="calcularTotalSeleccionado()" style="margin-right:10px;">
+                                    <div style="flex:1;">
+                                        <strong>${v.producto}</strong> - Cant: ${v.cantidad}<br>
+                                        <strong style="color:#d9534f;">$${v.monto.toFixed(2)}</strong>
+                                        <small style="color:#666; display:block;">${new Date(v.fecha).toLocaleDateString()}</small>
+                                    </div>
+                                </label>
+                            </div>`
+                        ).join('');
+                        document.getElementById('ventasPendientes').style.display = 'block';
+                    } else {
+                        document.getElementById('ventasPendientes').style.display = 'none';
+                    }
+                }
+                
+            } catch (err) {
+                console.error('Error cargando datos:', err);
+                alert('Error al cargar la información del cliente');
+            }
+        };
+        
+        // Registrar pago
+        document.getElementById('submitPagoBtn').addEventListener('click', async () => {
+            const clienteId = document.getElementById('clientePagoId').value;
+            const montoPago = parseFloat(document.getElementById('montoPago').value) || 0;
+            const formaPago = document.getElementById('formaPagoPago').value;
+            const observaciones = document.getElementById('observacionesPago').value;
+            
+            if (!clienteId) {
+                alert('Por favor selecciona un cliente');
+                return;
+            }
+            
+            // Obtener las ventas seleccionadas
+            const checkboxesSeleccionados = document.querySelectorAll('.venta-checkbox:checked');
+            if (checkboxesSeleccionados.length === 0) {
+                alert('Por favor selecciona al menos una venta para pagar');
+                return;
+            }
+            
+            const ventasSeleccionadas = [];
+            checkboxesSeleccionados.forEach(checkbox => {
+                const index = parseInt(checkbox.dataset.index);
+                ventasSeleccionadas.push(ventasPendientesCliente[index]);
+            });
+            
+            // Verificar que el monto coincida con el total seleccionado
+            const totalSeleccionado = ventasSeleccionadas.reduce((sum, v) => sum + parseFloat(v.monto), 0);
+            if (Math.abs(montoPago - totalSeleccionado) > 0.01) {
+                alert(`Error interno: El monto calculado no coincide. Por favor intenta nuevamente.`);
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/registrar-pago-seleccionado', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cliente_id: clienteId,
+                        ventas_seleccionadas: ventasSeleccionadas,
+                        monto_pago: montoPago,
+                        forma_pago: formaPago,
+                        observaciones: observaciones
+                    })
+                });
+                
+                if (res.ok) {
+                    const result = await res.json();
+                    alert(`✓ Pago registrado correctamente\nMonto pagado: $${result.monto_pagado.toFixed(2)}\nVentas pagadas: ${result.ventas_pagadas} (seleccionadas)\nDeuda restante: $${result.deuda_restante.toFixed(2)}`);
+                    
+                    // Recargar datos y limpiar formulario
+                    document.getElementById('clientePagoSearch').value = '';
+                    document.getElementById('clientePagoInfo').style.display = 'none';
+                    document.getElementById('formPagoDeuda').style.display = 'none';
+                    document.getElementById('ventasPendientes').style.display = 'none';
+                    document.getElementById('totalSeleccionado').style.display = 'none';
+                    document.getElementById('montoPago').value = '';
+                    document.getElementById('observacionesPago').value = '';
+                    document.getElementById('formaPagoPago').value = 'efectivo';
+                    document.getElementById('clientePagoId').value = '';
+                    ventasPendientesCliente = [];
+                    loadVentas();
+                } else {
+                    const error = await res.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al registrar pago');
+            }
+        });
+        
+        // Funciones para pago rápido integrado
+        async function mostrarPagoRapido() {
+            const clienteId = document.getElementById('clienteId').value;
+            if (!clienteId) {
+                alert('Por favor selecciona un cliente primero');
+                return;
+            }
+            
+            try {
+                // Cargar deuda actual
+                const res = await fetch(`/api/deuda/${clienteId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('deudaCompleta').textContent = data.deuda.toFixed(2);
+                    
+                    // Mostrar sección de pago rápido
+                    document.getElementById('pagoRapidoSection').style.display = 'block';
+                    
+                    // Scroll suave a la sección de pago
+                    document.getElementById('pagoRapidoSection').scrollIntoView({ behavior: 'smooth' });
+                }
+            } catch (err) {
+                console.error('Error cargando deuda:', err);
+                alert('Error al cargar la deuda del cliente');
+            }
+        }
+        
+        async function mostrarPagoParcial() {
+            const clienteId = document.getElementById('clienteId').value;
+            if (!clienteId) {
+                alert('Por favor selecciona un cliente primero');
+                return;
+            }
+            
+            try {
+                // Cargar ventas pendientes
+                const res = await fetch(`/api/ventas-pendientes/${clienteId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const ventas = data.ventas || [];
+                    
+                    if (ventas.length === 0) {
+                        alert('Este cliente no tiene ventas pendientes');
+                        return;
+                    }
+                    
+                    // Mostrar ventas con checkboxes
+                    const listaDiv = document.getElementById('ventasParaPagoParcial');
+                    listaDiv.innerHTML = ventas.map((v, index) => 
+                        `<div style="padding:8px; border-bottom:1px solid #eee; background:#f9f9f9; margin-bottom:5px; border-radius:3px;">
+                            <label style="display:flex; align-items:center; cursor:pointer;">
+                                <input type="checkbox" class="venta-checkbox-parcial" data-index="${index}" data-monto="${v.monto}" data-venta-id="${v.venta_id}" onchange="calcularTotalParcial()" style="margin-right:10px;">
+                                <div style="flex:1;">
+                                    <strong>${v.producto}</strong> - Cant: ${v.cantidad}<br>
+                                    <strong style="color:#d9534f;">$${v.monto.toFixed(2)}</strong>
+                                    <small style="color:#666; display:block;">${new Date(v.fecha).toLocaleDateString()}</small>
+                                </div>
+                            </label>
+                        </div>`
+                    ).join('');
+                    
+                    // Ocultar otros formularios y mostrar el parcial
+                    document.getElementById('pagoParcialForm').style.display = 'block';
+                    document.getElementById('pagoMixtoForm').style.display = 'none';
+                    calcularTotalParcial();
+                }
+            } catch (err) {
+                console.error('Error cargando ventas:', err);
+                alert('Error al cargar las ventas pendientes');
+            }
+        }
+        
+        async function mostrarPagoMixto() {
+            const clienteId = document.getElementById('clienteId').value;
+            if (!clienteId) {
+                alert('Por favor selecciona un cliente primero');
+                return;
+            }
+            
+            try {
+                // Cargar ventas pendientes
+                const res = await fetch(`/api/ventas-pendientes/${clienteId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const ventas = data.ventas || [];
+                    
+                    if (ventas.length === 0) {
+                        alert('Este cliente no tiene ventas pendientes');
+                        return;
+                    }
+                    
+                    // Mostrar ventas con checkboxes
+                    const listaDiv = document.getElementById('ventasParaPagoMixto');
+                    listaDiv.innerHTML = ventas.map((v, index) => 
+                        `<div style="padding:8px; border-bottom:1px solid #eee; background:#f9f9f9; margin-bottom:5px; border-radius:3px;">
+                            <label style="display:flex; align-items:center; cursor:pointer;">
+                                <input type="checkbox" class="venta-checkbox-mixto" data-index="${index}" data-monto="${v.monto}" data-venta-id="${v.venta_id}" onchange="calcularTotalMixto()" style="margin-right:10px;">
+                                <div style="flex:1;">
+                                    <strong>${v.producto}</strong> - Cant: ${v.cantidad}<br>
+                                    <strong style="color:#d9534f;">$${v.monto.toFixed(2)}</strong>
+                                    <small style="color:#666; display:block;">${new Date(v.fecha).toLocaleDateString()}</small>
+                                </div>
+                            </label>
+                        </div>`
+                    ).join('');
+                    
+                    // Ocultar otros formularios y mostrar el mixto
+                    document.getElementById('pagoParcialForm').style.display = 'none';
+                    document.getElementById('pagoMixtoForm').style.display = 'block';
+                    calcularTotalMixto();
+                }
+            } catch (err) {
+                console.error('Error cargando ventas:', err);
+                alert('Error al cargar las ventas pendientes');
+            }
+        }
+        
+        function calcularTotalParcial() {
+            const checkboxes = document.querySelectorAll('.venta-checkbox-parcial:checked');
+            let total = 0;
+            checkboxes.forEach(checkbox => {
+                total += parseFloat(checkbox.dataset.monto);
+            });
+            document.getElementById('totalPagoParcial').textContent = total.toFixed(2);
+        }
+        
+        function calcularTotalMixto() {
+            const checkboxes = document.querySelectorAll('.venta-checkbox-mixto:checked');
+            let total = 0;
+            checkboxes.forEach(checkbox => {
+                total += parseFloat(checkbox.dataset.monto);
+            });
+            document.getElementById('totalPagoMixto').textContent = total.toFixed(2);
+        }
+        
+        async function pagarDeudaCompleta() {
+            const clienteId = document.getElementById('clienteId').value;
+            const formaPago = 'completo'; // Pago completo no necesita forma específica
+            const observaciones = 'Pago completo de deuda';
+            
+            if (!clienteId) {
+                alert('Por favor selecciona un cliente primero');
+                return;
+            }
+            
+            if (!confirm('¿Estás seguro de que quieres pagar toda la deuda pendiente?')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/pagar-deuda-completa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cliente_id: clienteId,
+                        forma_pago: formaPago,
+                        observaciones: observaciones
+                    })
+                });
+                
+                if (res.ok) {
+                    const result = await res.json();
+                    alert(`✓ Pago completo registrado correctamente\nMonto pagado: $${result.monto_pagado.toFixed(2)}\nDeuda restante: $0.00`);
+                    
+                    // Recargar deuda del cliente
+                    cargarDeudaCliente(clienteId);
+                    
+                    // Ocultar sección de pago
+                    document.getElementById('pagoRapidoSection').style.display = 'none';
+                } else {
+                    const error = await res.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al registrar pago completo');
+            }
+        }
+        
+        async function aplicarPagoParcial() {
+            const clienteId = document.getElementById('clienteId').value;
+            const formaPago = document.getElementById('formaPagoParcial').value;
+            const observaciones = document.getElementById('observacionesParcial').value;
+            
+            if (!clienteId) {
+                alert('Por favor selecciona un cliente primero');
+                return;
+            }
+            
+            // Obtener las ventas seleccionadas
+            const checkboxesSeleccionados = document.querySelectorAll('.venta-checkbox-parcial:checked');
+            if (checkboxesSeleccionados.length === 0) {
+                alert('Por favor selecciona al menos una venta para pagar');
+                return;
+            }
+            
+            const ventasSeleccionadas = [];
+            checkboxesSeleccionados.forEach(checkbox => {
+                const ventaId = checkbox.dataset.ventaId;
+                const monto = parseFloat(checkbox.dataset.monto);
+                ventasSeleccionadas.push({ venta_id: ventaId, monto: monto });
+            });
+            
+            const totalSeleccionado = ventasSeleccionadas.reduce((sum, v) => sum + v.monto, 0);
+            
+            try {
+                const res = await fetch('/api/pagar-deuda-seleccionada', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cliente_id: clienteId,
+                        ventas_seleccionadas: ventasSeleccionadas,
+                        forma_pago: formaPago,
+                        observaciones: observaciones
+                    })
+                });
+                
+                if (res.ok) {
+                    const result = await res.json();
+                    alert(`✓ Pago parcial registrado correctamente\nMonto pagado: $${result.monto_pagado.toFixed(2)}\nVentas pagadas: ${result.ventas_pagadas}\nDeuda restante: $${result.deuda_restante.toFixed(2)}`);
+                    
+                    // Recargar deuda del cliente
+                    cargarDeudaCliente(clienteId);
+                    
+                    // Ocultar sección de pago
+                    document.getElementById('pagoRapidoSection').style.display = 'none';
+                } else {
+                    const error = await res.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al registrar pago parcial');
+            }
+        }
+        
+        async function aplicarPagoMixto() {
+            const clienteId = document.getElementById('clienteId').value;
+            const montoEfectivo = parseFloat(document.getElementById('montoEfectivo').value) || 0;
+            const montoTransferencia = parseFloat(document.getElementById('montoTransferencia').value) || 0;
+            const observaciones = document.getElementById('observacionesMixto').value;
+            
+            const totalPago = montoEfectivo + montoTransferencia;
+            
+            if (!clienteId) {
+                alert('Por favor selecciona un cliente primero');
+                return;
+            }
+            
+            // Obtener las ventas seleccionadas
+            const checkboxesSeleccionados = document.querySelectorAll('.venta-checkbox-mixto:checked');
+            if (checkboxesSeleccionados.length === 0) {
+                alert('Por favor selecciona al menos una venta para pagar');
+                return;
+            }
+            
+            const ventasSeleccionadas = [];
+            checkboxesSeleccionados.forEach(checkbox => {
+                const ventaId = checkbox.dataset.ventaId;
+                const monto = parseFloat(checkbox.dataset.monto);
+                ventasSeleccionadas.push({ venta_id: ventaId, monto: monto });
+            });
+            
+            const totalSeleccionado = ventasSeleccionadas.reduce((sum, v) => sum + v.monto, 0);
+            
+            if (Math.abs(totalPago - totalSeleccionado) > 0.01) {
+                alert(`El total de los métodos de pago ($${totalPago.toFixed(2)}) debe coincidir con el total seleccionado ($${totalSeleccionado.toFixed(2)})`);
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/pagar-deuda-mixta-seleccionada', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cliente_id: clienteId,
+                        ventas_seleccionadas: ventasSeleccionadas,
+                        monto_efectivo: montoEfectivo,
+                        monto_transferencia: montoTransferencia,
+                        observaciones: observaciones
+                    })
+                });
+                
+                if (res.ok) {
+                    const result = await res.json();
+                    alert(`✓ Pago mixto registrado correctamente\nEfectivo: $${result.monto_efectivo.toFixed(2)}\nTransferencia: $${result.monto_transferencia.toFixed(2)}\nTotal pagado: $${result.total_pagado.toFixed(2)}\nDeuda restante: $${result.deuda_restante.toFixed(2)}`);
+                    
+                    // Recargar deuda del cliente
+                    cargarDeudaCliente(clienteId);
+                    
+                    // Ocultar sección de pago
+                    document.getElementById('pagoRapidoSection').style.display = 'none';
+                } else {
+                    const error = await res.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al registrar pago mixto');
+            }
+        }
+        
+        // Control y Historial de Pagos
+        async function cargarHistorialPagos() {
+            const clienteFilter = document.getElementById('filterClientePago').value.trim();
+            const fechaDesde = document.getElementById('filterFechaDesde').value;
+            const fechaHasta = document.getElementById('filterFechaHasta').value;
+            
+            try {
+                let url = '/api/historial-pagos';
+                const params = new URLSearchParams();
+                
+                if (clienteFilter) params.append('cliente', clienteFilter);
+                if (fechaDesde) params.append('fecha_desde', fechaDesde);
+                if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+                
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    // Actualizar tabla
+                    const tbody = document.getElementById('tablaHistorialPagos');
+                    if (data.pagos && data.pagos.length > 0) {
+                        tbody.innerHTML = data.pagos.map(pago => 
+                            `<tr style="border-bottom:1px solid #eee;">
+                                <td style="padding:8px;">${pago.cliente_nombre}</td>
+                                <td style="padding:8px; text-align:center; font-weight:bold; color:#28a745;">$${parseFloat(pago.monto_pago).toFixed(2)}</td>
+                                <td style="padding:8px; text-align:center;">${pago.forma_pago}</td>
+                                <td style="padding:8px; text-align:center;">${new Date(pago.fecha_pago).toLocaleDateString()}</td>
+                                <td style="padding:8px; color:#666;">${pago.observaciones || '-'}</td>
+                            </tr>`
+                        ).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center; color:#999;">No hay pagos registrados</td></tr>';
+                    }
+                    
+                    // Actualizar totales
+                    document.getElementById('totalPagado').textContent = data.total_pagado ? parseFloat(data.total_pagado).toFixed(2) : '0.00';
+                    document.getElementById('totalPagosRegistrados').textContent = data.total_pagos || 0;
+                    document.getElementById('totalMontoPeriodo').textContent = '$' + (data.total_pagado ? parseFloat(data.total_pagado).toFixed(2) : '0.00');
+                    
+                } else {
+                    alert('Error al cargar el historial de pagos');
+                }
+            } catch (err) {
+                console.error('Error cargando historial:', err);
+                alert('Error al cargar el historial de pagos');
+            }
+        }
+        
+        // Validar y registrar pago con control de integridad
+        async function registrarPagoConControl(dataPago) {
+            try {
+                // Validación de datos
+                if (!dataPago.cliente_id || !dataPago.monto_pago || dataPago.monto_pago <= 0) {
+                    throw new Error('Datos de pago inválidos');
+                }
+                
+                // Obtener deuda actual antes de pagar
+                const deudaAntes = await fetch(`/api/deuda/${dataPago.cliente_id}`);
+                if (!deudaAntes.ok) throw new Error('No se pudo obtener la deuda actual');
+                const deudaData = await deudaAntes.json();
+                
+                if (dataPago.monto_pago > deudaData.deuda) {
+                    throw new Error(`El monto a pagar ($${dataPago.monto_pago.toFixed(2)}) supera la deuda actual ($${deudaData.deuda.toFixed(2)})`);
+                }
+                
+                return true;
+            } catch (err) {
+                console.error('Error en validación de pago:', err);
+                alert('Error: ' + err.message);
+                return false;
+            }
+        }
+        
+        // Refrescar estado de deuda en tiempo real
+        function refrescarEstadoCliente(clienteId) {
+            if (clienteId) {
+                cargarDeudaCliente(clienteId);
+            }
+        }
     </script>
+    <script src="/js/responsive-handler.js"></script>
 </body>
 </html>

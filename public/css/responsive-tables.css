@@ -1,0 +1,278 @@
+/* ============= TABLAS RESPONSIVAS MEJORADAS ============= */
+
+/* Ocultar estilos inline en tablas */
+table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background: white !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+    margin-top: 1.5rem !important;
+}
+
+table thead {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%) !important;
+}
+
+table th {
+    background: inherit !important;
+    padding: 1rem !important;
+    text-align: left !important;
+    font-weight: 700 !important;
+    color: white !important;
+    font-size: 0.95rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border: none !important;
+}
+
+table td {
+    padding: 1rem !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    font-size: 0.95rem !important;
+}
+
+table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+table tbody tr:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Estilos específicos para status */
+.status-active {
+    color: #27ae60 !important;
+    font-weight: bold !important;
+}
+
+.status-inactive {
+    color: #e74c3c !important;
+    font-weight: bold !important;
+}
+
+/* Input de búsqueda */
+input[type="text"][placeholder*="Buscar"], 
+input[type="text"][placeholder*="buscar"],
+input[placeholder*="Buscar"],
+input[placeholder*="buscar"] {
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 6px !important;
+    font-size: 1rem !important;
+    margin-bottom: 1.5rem !important;
+    transition: all 0.3s ease !important;
+}
+
+input[type="text"][placeholder*="Buscar"]:focus, 
+input[type="text"][placeholder*="buscar"]:focus,
+input[placeholder*="Buscar"]:focus,
+input[placeholder*="buscar"]:focus {
+    outline: none !important;
+    border-color: #3498db !important;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1) !important;
+}
+
+/* ============= RESPONSIVE TABLAS EN MÓVIL ============= */
+@media (max-width: 768px) {
+    /* Convertir tabla a cards en móvil */
+    table {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin-top: 1rem !important;
+    }
+
+    table thead {
+        display: none !important;
+    }
+
+    table tbody {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    table tbody tr {
+        display: block !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 8px !important;
+        padding: 1rem !important;
+        background: white !important;
+        margin-bottom: 1rem !important;
+    }
+
+    table tbody tr:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+
+    table thead th {
+        display: none !important;
+    }
+
+    table tbody td {
+        display: grid !important;
+        grid-template-columns: 40% 1fr !important;
+        gap: 1rem !important;
+        padding: 0.75rem 0 !important;
+        text-align: right !important;
+        border: none !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+    }
+
+    table tbody td:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Mostrar label en móvil */
+    table tbody td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        text-align: left;
+        color: #3498db;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    /* Para celdas sin data-label (botones de acción) */
+    table tbody td:has(button),
+    table tbody td:has(a.btn) {
+        grid-template-columns: 1fr;
+    }
+
+    table tbody td:has(button)::before,
+    table tbody td:has(a.btn)::before {
+        content: "Acciones";
+    }
+}
+
+@media (max-width: 480px) {
+    table {
+        font-size: 0.9rem !important;
+    }
+
+    table th {
+        padding: 0.75rem !important;
+        font-size: 0.85rem !important;
+    }
+
+    table td {
+        padding: 0.75rem !important;
+    }
+
+    table tbody td {
+        grid-template-columns: 45% 1fr !important;
+        gap: 0.75rem !important;
+        padding: 0.5rem 0 !important;
+    }
+
+    table tbody tr {
+        padding: 0.75rem !important;
+    }
+}
+
+/* ============= FILTROS Y CONTROLES ============= */
+.filter-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+
+.filter-section input,
+.filter-section select,
+.filter-section button {
+    padding: 0.75rem 1rem;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.filter-section input:focus,
+.filter-section select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+@media (max-width: 768px) {
+    .filter-section {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-section button {
+        width: 100%;
+    }
+}
+
+/* ============= DATA TABLE CON ESTILOS PERSONALIZADOS ============= */
+#dataTable {
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+#dataTable thead tr {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%) !important;
+}
+
+#dataTable thead th {
+    background: inherit !important;
+    padding: 1rem !important;
+    color: white !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    text-transform: uppercase !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.5px !important;
+    border: none !important;
+}
+
+#dataTable tbody td {
+    padding: 1rem !important;
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+#dataTable tbody tr:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* ============= ESTILOS ESPECÍFICOS PARA ÍCONOS EN BOTONES ============= */
+button[onclick*="editar"],
+button[onclick*="eliminar"],
+button[onclick*="Editar"],
+button[onclick*="Eliminar"] {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
+}
+
+/* ============= VER/OCULTAR EN RESPONSIVO ============= */
+@media (max-width: 1024px) {
+    /* Ocultar columnas menos importantes en tablets */
+    table th:nth-child(n+6),
+    table td:nth-child(n+6):not(:last-child) {
+        /* se mostrarán pero con prioridad baja */
+    }
+}
+
+@media (max-width: 768px) {
+    /* En móviles, solo mostrar acciones y info principal */
+    table th:nth-child(3),
+    table th:nth-child(5),
+    table th:nth-child(8),
+    table th:nth-child(9) {
+        display: none !important;
+    }
+
+    table td:nth-child(3),
+    table td:nth-child(5),
+    table td:nth-child(8),
+    table td:nth-child(9) {
+        display: none !important;
+    }
+}

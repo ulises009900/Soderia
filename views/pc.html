@@ -3,31 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modo PC - Administración</title>
+    <title>Gestión de Ventas</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/extra-style.css">
+    <link rel="stylesheet" href="/css/responsive-tables.css">
+    <link rel="stylesheet" href="/css/enhancements.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Modo PC (Administración)</h1>
+            <h1>Gestión de Ventas</h1>
             <a href="/logout" class="logout-link">Cerrar Sesión</a>
         </header>
         <main>
-            <section class="data-section">
+            <nav style="margin-bottom:20px;">
+                <button id="btnVentas" class="btn btn-primary" onclick="mostrarVentas()">📊 Ventas</button>
+                <button id="btnClientes" class="btn btn-secondary" onclick="mostrarClientes()">👥 Clientes</button>
+                <button id="btnProductos" class="btn btn-secondary" onclick="mostrarProductos()">📦 Productos</button>
+                <a href="/admin" class="btn btn-secondary" style="text-decoration:none;">⚙️ Admin</a>
+                <a href="/selector" class="btn btn-secondary" style="text-decoration:none;">← Volver</a>
+            </nav>
+
+            <!-- Sección Ventas -->
+            <section id="ventasSection" class="data-section" style="display:block;">
                 <h2>Gestión de Ventas</h2>
                 
+                <!-- Análisis -->
+                <div id="analisisSection" style="margin-bottom:20px; padding:20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius:8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <h3 style="margin-top:0; color: white;">📊 Panel de Análisis</h3>
+                    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:150px; text-align:center;">
+                            <div style="font-size:2em; font-weight:bold;">${totalVentas}</div>
+                            <div>Total Ventas</div>
+                        </div>
+                        <div style="flex:1; min-width:150px; text-align:center;">
+                            <div style="font-size:2em; font-weight:bold;">$${montoTotal}</div>
+                            <div>Monto Total</div>
+                        </div>
+                        <div style="flex:1; min-width:150px; text-align:center;">
+                            <div style="font-size:2em; font-weight:bold; color: #ffcc00;">$${saldoPendiente}</div>
+                            <div>Saldo Pendiente</div>
+                        </div>
+                        <div style="flex:1; min-width:150px; text-align:center;">
+                            <div style="font-size:2em; font-weight:bold; color: #4CAF50;">${ventasPagadas}</div>
+                            <div>Ventas Pagadas</div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Filtros -->
-                <div style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap;">
-                    <input type="text" id="filterCliente" placeholder="Filtrar por cliente..." style="flex:1; min-width:200px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                <div style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap; align-items: center;">
+                    <input type="text" id="filterCliente" placeholder="Buscar por cliente..." style="flex:1; min-width:200px; padding:8px; border:1px solid #ddd; border-radius:4px;">
                     <select id="filterPago" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
                         <option value="">Todos los estados</option>
-                        <option value="pago">✓ Pagó</option>
-                        <option value="no-pago">✗ No pagó</option>
+                        <option value="pago">✓ Pagado</option>
+                        <option value="no-pago">✗ No pagado</option>
                         <option value="cuenta-corriente">📝 Cuenta Corriente</option>
                         <option value="transferencia">💳 Transferencia</option>
                     </select>
-                    <button id="filterBtn" class="btn btn-primary" style="padding:8px 15px;">Filtrar</button>
+                    <button id="filterBtn" class="btn btn-primary" style="padding:8px 15px;">🔍 Filtrar</button>
+                    <button id="exportBtn" class="btn btn-secondary" style="padding:8px 15px;">📤 Exportar CSV</button>
+                    <button id="refreshBtn" class="btn btn-info" style="padding:8px 15px;">🔄 Actualizar</button>
                 </div>
                 
                 <table id="dataTable" style="width:100%; border-collapse:collapse;">
@@ -43,18 +79,181 @@
                             <th style="padding:10px; text-align:left;">Forma de Pago</th>
                             <th style="padding:10px; text-align:center;">Pagado</th>
                             <th style="padding:10px; text-align:left;">Fecha</th>
-                            <th style="padding:10px; text-align:center;">Acciones</th>
+                            <th style="padding:10px; text-align:center;">Editar</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
-                <a href="/selector" style="display:block;margin-top:20px;">← Volver al selector</a>
+            </section>
+
+            <!-- Sección Clientes -->
+            <section id="clientesSection" class="data-section" style="display:none;">
+                <h2>👥 Clientes Disponibles</h2>
+                <input type="text" id="searchClientes" placeholder="Buscar cliente..." style="width:100%; padding:8px; margin-bottom:15px; border:1px solid #ddd; border-radius:4px;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#f0f0f0;">
+                            <th style="padding:10px; text-align:left;">ID</th>
+                            <th style="padding:10px; text-align:left;">Nombre</th>
+                            <th style="padding:10px; text-align:left;">Dirección</th>
+                            <th style="padding:10px; text-align:left;">Teléfono</th>
+                            <th style="padding:10px; text-align:left;">Email</th>
+                            <th style="padding:10px; text-align:right;">Saldo Total</th>
+                            <th style="padding:10px; text-align:center;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientesBody"></tbody>
+                </table>
+            </section>
+
+            <!-- Sección Productos -->
+            <section id="productosSection" class="data-section" style="display:none;">
+                <h2>📦 Productos Disponibles</h2>
+                <input type="text" id="searchProductos" placeholder="Buscar producto..." style="width:100%; padding:8px; margin-bottom:15px; border:1px solid #ddd; border-radius:4px;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#f0f0f0;">
+                            <th style="padding:10px; text-align:left;">ID</th>
+                            <th style="padding:10px; text-align:left;">Nombre</th>
+                            <th style="padding:10px; text-align:left;">Descripción</th>
+                            <th style="padding:10px; text-align:right;">Precio</th>
+                            <th style="padding:10px; text-align:right;">Stock</th>
+                            <th style="padding:10px; text-align:center;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productosBody"></tbody>
+                </table>
             </section>
         </main>
     </div>
 
     <script>
         let allVentas = [];
+        let allClientes = [];
+        let allProductos = [];
+
+        // Funciones para cambiar de sección
+        function mostrarVentas() {
+            document.getElementById('ventasSection').style.display = 'block';
+            document.getElementById('clientesSection').style.display = 'none';
+            document.getElementById('productosSection').style.display = 'none';
+            document.getElementById('btnVentas').className = 'btn btn-primary';
+            document.getElementById('btnClientes').className = 'btn btn-secondary';
+            document.getElementById('btnProductos').className = 'btn btn-secondary';
+            loadData();
+        }
+
+        function mostrarClientes() {
+            document.getElementById('ventasSection').style.display = 'none';
+            document.getElementById('clientesSection').style.display = 'block';
+            document.getElementById('productosSection').style.display = 'none';
+            document.getElementById('btnVentas').className = 'btn btn-secondary';
+            document.getElementById('btnClientes').className = 'btn btn-primary';
+            document.getElementById('btnProductos').className = 'btn btn-secondary';
+            loadClientes();
+        }
+
+        function mostrarProductos() {
+            document.getElementById('ventasSection').style.display = 'none';
+            document.getElementById('clientesSection').style.display = 'none';
+            document.getElementById('productosSection').style.display = 'block';
+            document.getElementById('btnVentas').className = 'btn btn-secondary';
+            document.getElementById('btnClientes').className = 'btn btn-secondary';
+            document.getElementById('btnProductos').className = 'btn btn-primary';
+            loadProductos();
+        }
+
+        // Cargar Clientes
+        async function loadClientes() {
+            try {
+                const res = await fetch('/api/clientes');
+                allClientes = await res.json();
+                renderClientes(allClientes);
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('clientesBody').innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:red;">Error al cargar clientes</td></tr>';
+            }
+        }
+
+        function renderClientes(clientes) {
+            const tbody = document.getElementById('clientesBody');
+            if (clientes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">Sin clientes registrados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = clientes.map(c => `
+                <tr style="border-bottom:1px solid #ddd;">
+                    <td style="padding:10px;">${c.id}</td>
+                    <td style="padding:10px;">${c.nombre}</td>
+                    <td style="padding:10px;">${c.direccion || '-'}</td>
+                    <td style="padding:10px;">${c.telefono || '-'}</td>
+                    <td style="padding:10px;">${c.email || '-'}</td>
+                    <td style="padding:10px;text-align:right;">$${parseFloat(c.saldo_total || 0).toFixed(2)}</td>
+                    <td style="padding:10px;text-align:center;"><span style="color:${c.activo ? 'green' : 'red'};font-weight:bold;">${c.activo ? 'Activo' : 'Inactivo'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // Buscar clientes
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchClientes = document.getElementById('searchClientes');
+            if (searchClientes) {
+                searchClientes.addEventListener('keyup', () => {
+                    const query = searchClientes.value.toLowerCase();
+                    const filtered = allClientes.filter(c => 
+                        c.nombre.toLowerCase().includes(query) || 
+                        (c.email && c.email.toLowerCase().includes(query)) ||
+                        (c.telefono && c.telefono.includes(query))
+                    );
+                    renderClientes(filtered);
+                });
+            }
+        });
+
+        // Cargar Productos
+        async function loadProductos() {
+            try {
+                const res = await fetch('/api/productos');
+                allProductos = await res.json();
+                renderProductos(allProductos);
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('productosBody').innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:red;">Error al cargar productos</td></tr>';
+            }
+        }
+
+        function renderProductos(productos) {
+            const tbody = document.getElementById('productosBody');
+            if (productos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#999;">Sin productos registrados</td></tr>';
+                return;
+            }
+            tbody.innerHTML = productos.map(p => `
+                <tr style="border-bottom:1px solid #ddd;">
+                    <td style="padding:10px;">${p.id}</td>
+                    <td style="padding:10px;">${p.nombre}</td>
+                    <td style="padding:10px;">${p.descripcion || '-'}</td>
+                    <td style="padding:10px;text-align:right;">$${parseFloat(p.precio_unitario || 0).toFixed(2)}</td>
+                    <td style="padding:10px;text-align:right;">${p.stock}</td>
+                    <td style="padding:10px;text-align:center;"><span style="color:${p.activo ? 'green' : 'red'};font-weight:bold;">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // Buscar productos
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchProductos = document.getElementById('searchProductos');
+            if (searchProductos) {
+                searchProductos.addEventListener('keyup', () => {
+                    const query = searchProductos.value.toLowerCase();
+                    const filtered = allProductos.filter(p => 
+                        p.nombre.toLowerCase().includes(query) || 
+                        (p.descripcion && p.descripcion.toLowerCase().includes(query))
+                    );
+                    renderProductos(filtered);
+                });
+            }
+        });
 
         function formatFormaPago(forma) {
             const map = {
@@ -84,7 +283,8 @@
             const tbody = document.querySelector('#dataTable tbody');
             
             if (ventas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" style="padding:20px;text-align:center;color:#999;">Sin ventas registradas</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="padding:20px;text-align:center;color:#999;">Sin ventas registradas</td></tr>';
+                updateAnalisis(allVentas);
                 return;
             }
             
@@ -101,11 +301,76 @@
                     <td style="padding:10px;text-align:center;">${v.pagado ? '✓' : '✗'}</td>
                     <td style="padding:10px;font-size:0.9em;color:#666;">${new Date(v.created_at).toLocaleDateString()}</td>
                     <td style="padding:10px;text-align:center;">
-                        <button onclick="editVenta(${v.id})" style="margin-right:5px; padding:5px 10px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer;">✏️</button>
-                        <button onclick="delVenta(${v.id})" style="padding:5px 10px; background:#e74c3c; color:white; border:none; border-radius:4px; cursor:pointer;">🗑️</button>
+                        <button onclick="editVenta(${v.id})" style="margin-right:5px; padding:5px 10px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer;">✏️ Editar</button>
                     </td>
                 </tr>
             `).join('');
+            
+            updateAnalisis(allVentas);
+        }
+
+        function updateAnalisis(ventas) {
+            const totalVentas = ventas.length;
+            const montoTotal = ventas.reduce((sum, v) => sum + parseFloat(v.monto || 0), 0);
+            const saldoPendiente = ventas.reduce((sum, v) => sum + parseFloat(v.saldo || 0), 0);
+            const ventasPagadas = ventas.filter(v => v.pagado).length;
+            
+            document.getElementById('analisisSection').innerHTML = `
+                <h3 style="margin-top:0; color: white;">📊 Panel de Análisis</h3>
+                <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:150px; text-align:center;">
+                        <div style="font-size:2em; font-weight:bold;">${totalVentas}</div>
+                        <div>Total Ventas</div>
+                    </div>
+                    <div style="flex:1; min-width:150px; text-align:center;">
+                        <div style="font-size:2em; font-weight:bold;">$${montoTotal.toFixed(2)}</div>
+                        <div>Monto Total</div>
+                    </div>
+                    <div style="flex:1; min-width:150px; text-align:center;">
+                        <div style="font-size:2em; font-weight:bold; color: #ffcc00;">$${saldoPendiente.toFixed(2)}</div>
+                        <div>Saldo Pendiente</div>
+                    </div>
+                    <div style="flex:1; min-width:150px; text-align:center;">
+                        <div style="font-size:2em; font-weight:bold; color: #4CAF50;">${ventasPagadas}</div>
+                        <div>Ventas Pagadas</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function exportToCSV() {
+            const ventas = allVentas; // or filtered if needed, but for now all
+            if (ventas.length === 0) {
+                alert('No hay datos para exportar');
+                return;
+            }
+            
+            const headers = ['ID', 'Cliente', 'Dirección', 'Producto', 'Cantidad', 'Monto', 'Saldo', 'Forma de Pago', 'Pagado', 'Fecha'];
+            const csvContent = [
+                headers.join(','),
+                ...ventas.map(v => [
+                    v.id,
+                    `"${v.cliente_nombre || ''}"`,
+                    `"${v.dirección || ''}"`,
+                    `"${v.producto || ''}"`,
+                    v.cantidad || '',
+                    parseFloat(v.monto || 0).toFixed(2),
+                    parseFloat(v.saldo || 0).toFixed(2),
+                    `"${formatFormaPago(v.forma_pago)}"`,
+                    v.pagado ? 'Sí' : 'No',
+                    new Date(v.created_at).toLocaleDateString()
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'ventas.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function applyFilters() {
@@ -134,6 +399,12 @@
             const newMonto = prompt('Monto:', venta.monto);
             if (newMonto === null) return;
             
+            const newFormaPago = prompt('Forma de Pago:', venta.forma_pago);
+            if (newFormaPago === null) return;
+            
+            const newPagado = confirm('¿Pagado?') ? 1 : 0;
+            const newSaldo = newPagado ? 0 : parseFloat(newMonto);
+            
             try {
                 const res = await fetch('/api/data/' + id, {
                     method: 'PUT',
@@ -142,9 +413,9 @@
                         producto: newProducto,
                         cantidad: parseFloat(newCantidad),
                         monto: parseFloat(newMonto),
-                        forma_pago: venta.forma_pago,
-                        saldo: venta.saldo || 0,
-                        pagado: venta.pagado
+                        forma_pago: newFormaPago,
+                        saldo: newSaldo,
+                        pagado: newPagado
                     })
                 });
                 
@@ -160,30 +431,16 @@
             }
         }
 
-        async function delVenta(id) {
-            if (!confirm('¿Eliminar esta venta?')) return;
-            
-            try {
-                const res = await fetch('/api/data/' + id, { method: 'DELETE' });
-                if (res.ok) {
-                    alert('✓ Venta eliminada');
-                    loadData();
-                } else {
-                    alert('Error al eliminar');
-                }
-            } catch (err) {
-                console.error('Error:', err);
-                alert('Error al comunicarse con el servidor');
-            }
-        }
-
         // Event listeners
         document.getElementById('filterBtn').addEventListener('click', applyFilters);
         document.getElementById('filterCliente').addEventListener('keyup', applyFilters);
         document.getElementById('filterPago').addEventListener('change', applyFilters);
+        document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+        document.getElementById('refreshBtn').addEventListener('click', loadData);
 
         // Cargar datos al abrir la página
         loadData();
     </script>
+    <script src="/js/responsive-handler.js"></script>
 </body>
 </html>

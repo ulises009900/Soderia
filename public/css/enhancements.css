@@ -1,0 +1,424 @@
+/* ============= MEJORAS DE NAVEGACIÓN ============= */
+
+nav {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+nav button,
+nav a.btn {
+    transition: all 0.3s ease;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+/* Botones de navegación responsive */
+@media (max-width: 768px) {
+    nav {
+        padding: 0.75rem;
+    }
+
+    nav button,
+    nav a.btn {
+        padding: 0.6rem 0.9rem !important;
+        font-size: 0.9rem;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    nav {
+        padding: 0.5rem;
+    }
+
+    nav button,
+    nav a.btn {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.85rem;
+    }
+}
+
+/* ============= MEJORAR FORMULARIOS ============= */
+.form-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}
+
+.form-section h3 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Grid de formularios en línea */
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-section {
+        padding: 1.5rem;
+    }
+}
+
+/* ============= MEJORA DE MODALES ============= */
+.modal {
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    animation: slideUp 0.3s ease;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 1rem;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #3498db;
+    font-size: 1.5rem;
+}
+
+.close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.close:hover {
+    background: #f0f0f0;
+    color: #e74c3c;
+    border-radius: 50%;
+}
+
+/* ============= INFORMACIÓN DEL CLIENTE ============= */
+#clienteInfo {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    border-left: 4px solid #3498db;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+#clienteInfo strong {
+    color: #2c3e50;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+#clienteInfo br + strong {
+    margin-top: 1rem;
+}
+
+/* ============= GRID DE ACCIONES RÁPIDAS ============= */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.quick-action-btn {
+    padding: 1.25rem;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #2c3e50;
+    text-align: center;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.quick-action-btn:hover {
+    border-color: #3498db;
+    background: #ecf3f8;
+    color: #3498db;
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+}
+
+/* ============= CARDS DE ESTADÍSTICAS ============= */
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    border-top: 4px solid #3498db;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+}
+
+.stat-card.stat-danger {
+    border-top-color: #e74c3c;
+}
+
+.stat-card.stat-success {
+    border-top-color: #27ae60;
+}
+
+.stat-card.stat-warning {
+    border-top-color: #f39c12;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #3498db;
+    margin: 0.5rem 0;
+    line-height: 1;
+}
+
+.stat-card.stat-danger .stat-number {
+    color: #e74c3c;
+}
+
+.stat-card.stat-success .stat-number {
+    color: #27ae60;
+}
+
+.stat-card.stat-warning .stat-number {
+    color: #f39c12;
+}
+
+.stat-label {
+    color: #999;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+/* ============= SECCIONES DE DATOS ============= */
+.data-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}
+
+.data-section h2 {
+    color: #2c3e50;
+    border-bottom: 3px solid #3498db;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.data-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+/* ============= COLORES DE ESTADO ============= */
+.status-badge {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-paid {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* ============= ESTILOS PARA MÓVIL - GENERAL ============= */
+@media (max-width: 768px) {
+    main {
+        padding: 1rem;
+    }
+
+    .data-section,
+    .form-section,
+    .admin-section {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    #clienteInfo {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .quick-actions {
+        gap: 0.75rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    main {
+        padding: 0.75rem;
+    }
+
+    .data-section,
+    .form-section,
+    .admin-section {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+    }
+
+    .stat-number {
+        font-size: 1.75rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+    }
+}
+
+/* ============= PRINT STYLES ============= */
+@media print {
+    body {
+        background: white;
+    }
+
+    nav,
+    header,
+    .logout-link,
+    button,
+    .btn {
+        display: none;
+    }
+
+    table {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+
+    table thead {
+        background: #f0f0f0;
+        color: #000;
+    }
+}
