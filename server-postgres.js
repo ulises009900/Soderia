@@ -122,9 +122,20 @@ app.get('/logout', (req, res) => {
     });
 });
 
+// Return JSON for API auth failures so frontend can handle errors reliably.
+function requireApiAuth(req, res, next) {
+    if (!req.session.loggedin) {
+        return res.status(401).json({
+            error: 'Sesion expirada o no iniciada. Vuelve a iniciar sesion.'
+        });
+    }
+    next();
+}
+
+app.use('/api', requireApiAuth);
+
 // REST API for data entries
 app.get('/api/data', async (req, res) => {
-    if (!req.session.loggedin) return res.status(401).send('Unauthorized');
     try {
         const result = await pool.query(`
             SELECT 
@@ -167,15 +178,17 @@ app.get('/api/data', async (req, res) => {
 });
 
 app.post('/api/data', async (req, res) => {
-    if (!req.session.loggedin) return res.status(401).send('Unauthorized');
+    const client = await pool.connect();
     try {
         const { cliente_id, cliente_nombre, direccion, producto, cantidad, monto, forma_pago, pagado } = req.body;
         
         const estado_pago = pagado ? 'pagado' : 'pendiente';
         const saldo_deuda = pagado ? 0 : monto;
+
+        await client.query('BEGIN');
         
         // Insert venta
-        const ventaResult = await pool.query(
+        const ventaResult = await client.query(
             `INSERT INTO ventas (cliente_id, cliente_nombre, direccion, total_monto, forma_pago, estado_pago, saldo_deuda) 
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
             [cliente_id || null, cliente_nombre, direccion, monto, forma_pago, estado_pago, saldo_deuda]
@@ -185,16 +198,25 @@ app.post('/api/data', async (req, res) => {
         const precio_unitario = cantidad > 0 ? monto / cantidad : 0;
         
         // Insert detalle_venta
-        const detalleResult = await pool.query(
+        const detalleResult = await client.query(
             `INSERT INTO detalles_venta (venta_id, producto_nombre, cantidad, precio_unitario, monto)
              VALUES ($1, $2, $3, $4, $5) RETURNING id`,
             [ventaId, producto, cantidad, precio_unitario, monto]
         );
+
+        await client.query('COMMIT');
         
         res.json({ id: detalleResult.rows[0].id, venta_id: ventaId });
     } catch (error) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackError) {
+            console.error('Error en rollback /api/data:', rollbackError.message);
+        }
         console.error(error);
         res.status(500).json({ error: error.message });
+    } finally {
+        client.release();
     }
 });
 
@@ -382,7 +404,7 @@ app.get('/api/ventas-pendientes/:cliente_id', async (req, res) => {
 
 // Registrar Pago - Completa
 app.post('/api/pagar-deuda-completa', async (req, res) => {
-    if (!req.session.loggedin) return res.status(401).send('Unauthorized');
+    const client = await pool.connect();
     try {
         const { cliente_id, forma_pago, observaciones } = req.body;
 
@@ -391,7 +413,7 @@ app.post('/api/pagar-deuda-completa', async (req, res) => {
         }
 
         // Validar cliente existe
-        const clienteResult = await pool.query('SELECT id, nombre FROM clientes WHERE id = $1', [cliente_id]);
+        const clienteResult = await client.query('SELECT id, nombre FROM clientes WHERE id = $1', [cliente_id]);
         if (clienteResult.rows.length === 0) {
             return res.status(404).json({ error: 'Cliente no encontrado' });
         }
@@ -399,7 +421,7 @@ app.post('/api/pagar-deuda-completa', async (req, res) => {
         const clienteNombre = clienteResult.rows[0].nombre;
 
         // Obtener deuda total
-        const deudaResult = await pool.query(
+        const deudaResult = await client.query(
             `SELECT SUM(dv.monto) as deuda_total
              FROM detalles_venta dv
              JOIN ventas v ON dv.venta_id = v.id
@@ -421,18 +443,22 @@ app.post('/api/pagar-deuda-completa', async (req, res) => {
 
         const fechaPago = new Date().toISOString();
 
+        await client.query('BEGIN');
+
         // Actualizar ventas como pagadas
-        await pool.query(
+        await client.query(
             'UPDATE ventas SET estado_pago = $1, saldo_deuda = 0 WHERE cliente_id = $2 AND estado_pago = $3',
             ['pagado', cliente_id, 'pendiente']
         );
 
         // Registrar pago
-        await pool.query(
+        await client.query(
             `INSERT INTO pagos_deuda (cliente_id, cliente_nombre, monto_pago, forma_pago, observaciones, fecha_pago)
              VALUES ($1, $2, $3, $4, $5, $6)`,
             [cliente_id, clienteNombre, deudaTotal, forma_pago, observaciones || '', fechaPago]
         );
+
+        await client.query('COMMIT');
 
         res.json({
             success: true,
@@ -440,8 +466,15 @@ app.post('/api/pagar-deuda-completa', async (req, res) => {
             deuda_restante: 0
         });
     } catch (error) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackError) {
+            console.error('Error en rollback /api/pagar-deuda-completa:', rollbackError.message);
+        }
         console.error(error);
         res.status(500).json({ error: error.message });
+    } finally {
+        client.release();
     }
 });
 
@@ -531,7 +564,7 @@ app.delete('/api/productos/:id', async (req, res) => {
 
 // Ventas API
 app.post('/api/ventas', async (req, res) => {
-    if (!req.session.loggedin) return res.status(401).send('Unauthorized');
+    const client = await pool.connect();
     try {
         const { cliente_id, cliente_nombre, direccion, productos, forma_pago, pagado } = req.body;
         
@@ -542,9 +575,11 @@ app.post('/api/ventas', async (req, res) => {
         const estado_pago = pagado ? 'pagado' : 'pendiente';
         const total_monto = productos.reduce((sum, p) => sum + (parseFloat(p.monto) || 0), 0);
         const saldo_deuda = pagado ? 0 : total_monto;
+
+        await client.query('BEGIN');
         
         // Insert venta
-        const ventaResult = await pool.query(
+        const ventaResult = await client.query(
             `INSERT INTO ventas (cliente_id, cliente_nombre, direccion, total_monto, forma_pago, estado_pago, saldo_deuda) 
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
             [cliente_id || null, cliente_nombre, direccion, total_monto, forma_pago, estado_pago, saldo_deuda]
@@ -559,18 +594,27 @@ app.post('/api/ventas', async (req, res) => {
             const monto = parseFloat(producto.monto) || 0;
             const precio_unitario = cantidad > 0 ? monto / cantidad : 0;
             
-            await pool.query(
+            await client.query(
                 `INSERT INTO detalles_venta (venta_id, producto_nombre, cantidad, precio_unitario, monto)
                  VALUES ($1, $2, $3, $4, $5)`,
                 [ventaId, producto.producto, cantidad, precio_unitario, monto]
             );
             completados++;
         }
+
+        await client.query('COMMIT');
         
         res.json({ id: ventaId, productos_guardados: completados });
     } catch (error) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackError) {
+            console.error('Error en rollback /api/ventas:', rollbackError.message);
+        }
         console.error(error);
         res.status(500).json({ error: error.message });
+    } finally {
+        client.release();
     }
 });
 
