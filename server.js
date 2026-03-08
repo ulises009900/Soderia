@@ -5,11 +5,12 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
+const sessionSecret = process.env.SESSION_SECRET || 'supersecretkey';
 
 // Setup session middleware
 app.use(session({
-    secret: 'supersecretkey', // Change this for a real application
+    secret: sessionSecret, // can be overridden with SESSION_SECRET env var
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false } // Set to true if using https

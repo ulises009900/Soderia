@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: soderia
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
