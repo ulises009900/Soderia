@@ -4,10 +4,9 @@
   "description": "Sistema de gestión remota multi-dispositivo",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "start-ngrok": "node server.js",
-    "dev": "node server.js",
-    "init-db": "node init-db-simple.js"
+    "start": "node server-postgres.js",
+    "dev": "node server-postgres.js",
+    "init-db": "node init-postgres.js"
   },
   "repository": {
     "type": "git",

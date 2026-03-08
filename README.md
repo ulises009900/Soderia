@@ -1,6 +1,17 @@
 # Soderia Web App
 
-Sistema completo de gestión para una soderia con Node.js, SQLite, HTML/CSS/JS.
+Sistema completo de gestión para una soderia con Node.js, **PostgreSQL 18**, HTML/CSS/JS.
+
+## ✨ Actualización: PostgreSQL en Render
+
+**Migración completada** de SQLite a PostgreSQL 18.
+
+✓ BD profesional en Render
+✓ Código async/await moderno  
+✓ Escalable a usuarios ilimitados
+✓ Backups automáticos
+
+👉 [Ver Guía de Setup en Render](RENDER_DEPLOYMENT_STEPS.md)
 
 ## Características principales
 
@@ -9,26 +20,34 @@ Sistema completo de gestión para una soderia con Node.js, SQLite, HTML/CSS/JS.
   - **Administración**: Gestión completa de clientes y productos
   - **Modo PC**: Visualización y edición de ventas
   - **Modo Móvil**: Carga rápida de ventas desde dispositivos móviles
-- **🗄️ Base de Datos SQLite**: 9 tablas con relaciones FK para datos estructurados
-- **🌐 Acceso Remoto**: Integración con ngrok para HTTPS seguro
+- **🗄️ Base de Datos PostgreSQL 18**: 9 tablas con relaciones FK para datos estructurados en cloud
+- **☁️ Hosting en Render**: Despliegue automático desde Git, HTTPS, BBD administrada
 - **📊 Gestión Completa**: CRUD completo para clientes, productos y ventas
 
 ## Estructura del proyecto
 
 ```
 Soderia/
-├── public/css/           # Estilos CSS (style.css, extra-style.css)
-├── views/                # Páginas HTML del frontend
-│   ├── login.html        # Página de login
-│   ├── selector.html     # Selector de modo de operación
-│   ├── admin.html        # Panel de administración
-│   ├── pc.html           # Modo PC (gestión de ventas)
-│   └── movil.html        # Modo móvil (carga de ventas)
-├── soderia.db            # Base de datos SQLite (creada automáticamente)
-├── server.js             # Servidor Express con APIs REST
-├── package.json          # Dependencias y scripts
-└── README.md             # Este archivo
+├── public/css/                    # Estilos CSS
+├── views/                         # Páginas HTML del frontend
+│   ├── login.html
+│   ├── selector.html
+│   ├── admin.html
+│   ├── pc.html
+│   └── movil.html
+├── db-config.js                   # ✨ Configuración PostgreSQL
+├── init-postgres.js               # ✨ Inicialización automática de BD
+├── server-postgres.js             # ✨ Servidor con async/await (main)
+├── server.js                      # (Referencia SQLite - backup)
+├── package.json                   # Dependencias y scripts
+├── .env.example                   # ✨ Variables de entorno
+├── render.yaml                    # ✨ Configuración Render
+├── RENDER_DEPLOYMENT_STEPS.md     # ✨ Guía paso a paso
+├── QUICK_START.md                 # ✨ Inicio rápido
+└── README.md                      # Este archivo
 ```
+
+✨ = Archivos nuevos para PostgreSQL
 
 ## Funcionalidades por Módulo
 
@@ -79,40 +98,83 @@ Soderia/
 
 ## Instalación y Uso
 
-### 1. Instalar dependencias
+### ⚡ Inicio Rápido (Render)
+
+**👉 [Ver instrucciones paso a paso aquí](RENDER_DEPLOYMENT_STEPS.md)**
+
+1. Crear BD PostgreSQL en Render (2 min)
+2. Configurar variable `DATABASE_URL` (1 min)
+3. Push a Git → Auto-deploy (3 min)
+4. ¡Listo! 🚀
+
+### 🖥️ Desarrollo Local
+
+#### Requisitos
+- Node.js 14+
+- PostgreSQL 12+ (opcional, para testing local)
+
+#### Instalación
+
 ```bash
+# 1. Clonar repositorio
+git clone <tu-repo>
+cd Soderia
+
+# 2. Instalar dependencias
 npm install
-```
 
-### 2. Iniciar la aplicación
-```bash
-# Opción 1: Servidor local
-npm start
-
-# Opción 2: Con ngrok (acceso remoto)
-# Configurar token de ngrok en .env
-npm run start-ngrok
-```
-
-### 3. Acceder a la aplicación
-1. Abrir navegador en `http://localhost:3000`
-2. Iniciar sesión con:
-   - **Usuario**: `admin`
-   - **Contraseña**: `admin`
-3. Seleccionar el modo de operación deseado
-
-### 4. Configuración inicial (opcional)
-```bash
-# Copiar archivo de configuración de ejemplo
+# 3. Crear archivo .env
 cp .env.example .env
 
-# Editar .env con tu token de ngrok
-# NGROK_TOKEN=tu_token_aqui
-
-# Cargar datos de ejemplo
-node seed-clientes.js    # Carga 10 clientes de ejemplo
-node seed-productos.js   # Carga 15 productos de ejemplo
+# Editar .env si usas PostgreSQL local:
+# DATABASE_URL=postgresql://postgres:password@localhost:5432/soderia
 ```
+
+#### Correr la aplicación
+
+```bash
+# OPCIÓN 1: Usar SQLite (server-sqlite.js - si quieres volver atrás)
+npm start
+
+# OPCIÓN 2: Usar PostgreSQL (recomendado - server-postgres.js)
+# (Requiere BD PostgreSQL creada previamente)
+npm run init-db   # Crear tablas
+npm start         # Iniciar servidor
+```
+
+#### Cargar datos de ejemplo (opcional)
+
+```bash
+node seed-clientes.js    # 10 clientes de ejemplo
+node seed-productos.js   # 15 productos de ejemplo
+```
+
+#### Acceder a la app
+
+Abre en navegador: `http://localhost:3000`
+
+```
+Usuario: admin
+Contraseña: admin
+```
+
+### 🌐 Despliegue en Render
+
+**Pasos detallados:** [Guía completa aquí](RENDER_DEPLOYMENT_STEPS.md)
+
+```
+1. Crear BD PostgreSQL en Render
+2. Obtener DATABASE_URL
+3. Agregar variables de entorno
+4. git push
+5. ¡Listo!
+```
+
+**Estado actual:** 
+✓ Código listo para Render
+✓ Docker configurado
+✓ Init automático de BD
+✓ Solo faltan credenciales de Render
 
 ## APIs REST Disponibles
 
