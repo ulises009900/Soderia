@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modo Móvil - Carga de Datos</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/extra-style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Modo Móvil (Carga de Datos)</h1>
+            <a href="/logout" class="logout-link">Cerrar Sesión</a>
+        </header>
+        <main>
+            <section class="form-section">
+                <h2>Cargar Venta</h2>
+                
+                <!-- Búsqueda de Cliente -->
+                <div class="form-group">
+                    <label>Cliente:</label>
+                    <div class="search-container">
+                        <input type="text" id="clienteSearch" placeholder="Buscar cliente..." autocomplete="off">
+                        <div id="clienteResults" class="search-results"></div>
+                    </div>
+                    <input type="hidden" id="clienteId">
+                    <input type="hidden" id="clienteNombre">
+                    <input type="hidden" id="clienteDireccion">
+                </div>
+                
+                <!-- Cliente Info (después de seleccionar) -->
+                <div id="clienteInfo" style="margin-top:10px; padding:10px; background:#f0f0f0; border-radius:5px; display:none;">
+                    <strong>Cliente:</strong> <span id="clienteSelected"></span><br>
+                    <strong>Dirección:</strong> <span id="direccionSelected"></span>
+                </div>
+
+                <!-- Dirección (campo en formulario) -->
+                <div class="form-group" id="direccionFormGroup" style="display:none;">
+                    <label>Dirección:</label>
+                    <input type="text" id="direccionForm" readonly placeholder="Se llena automáticamente">
+                </div>
+                
+                <!-- Agregar Productos -->
+                <h3 style="margin-top:20px; margin-bottom:10px;">Agregar Productos</h3>
+                
+                <!-- Producto -->
+                <div class="form-group">
+                    <label>Producto:</label>
+                    <select id="producto">
+                        <option value="">Selecciona un producto...</option>
+                    </select>
+                </div>
+                
+                <!-- Cantidad -->
+                <div class="form-group">
+                    <label>Cantidad:</label>
+                    <input type="number" id="cantidad" min="1" value="1">
+                </div>
+                
+                <!-- Monto -->
+                <div class="form-group">
+                    <label>Monto ($):</label>
+                    <input type="number" id="monto" step="0.01" min="0">
+                </div>
+                
+                <!-- Botón Agregar Producto -->
+                <button id="agregarProductoBtn" class="btn btn-secondary" style="margin-top:10px; width:100%;">+ Agregar Producto</button>
+                
+                <!-- Lista de Productos -->
+                <div id="productosContainer" style="margin-top:20px;">
+                    <h3>Productos en la Venta:</h3>
+                    <table id="productosTable" style="width:100%; border-collapse:collapse; margin-top:10px;">
+                        <thead>
+                            <tr style="background:#f0f0f0;">
+                                <th style="padding:8px; text-align:left;">Producto</th>
+                                <th style="padding:8px; text-align:center;">Cantidad</th>
+                                <th style="padding:8px; text-align:right;">Monto</th>
+                                <th style="padding:8px; text-align:center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productosBody"></tbody>
+                        <tfoot>
+                            <tr style="background:#f9f9f9; font-weight:bold;">
+                                <td colspan="2" style="padding:10px; text-align:right;">TOTAL:</td>
+                                <td style="padding:10px; text-align:right;">$<span id="totalMonto">0.00</span></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <!-- Forma de Pago -->
+                <div class="form-group" style="margin-top:20px;">
+                    <label>Forma de Pago:</label>
+                    <select id="formaPago">
+                        <option value="pago">✓ Pagó</option>
+                        <option value="no-pago">✗ No pagó</option>
+                        <option value="cuenta-corriente">📝 Cuenta Corriente</option>
+                        <option value="transferencia">💳 Transferencia</option>
+                    </select>
+                </div>
+                
+                <!-- Saldo (Solo lectura) -->
+                <div class="form-group">
+                    <label>Saldo Pendiente ($):</label>
+                    <input type="number" id="saldo" step="0.01" min="0" value="0" readonly style="background-color:#f5f5f5; cursor:not-allowed;">
+                </div>
+                
+                <button id="submitBtn" class="btn btn-primary" style="margin-top:15px; width:100%;">💾 Guardar Venta</button>
+                <a href="/selector" style="display:block; margin-top:20px; text-align:center;">← Volver al selector</a>
+            </section>
+            
+            <!-- Historial de Ventas -->
+            <section class="history-section" style="margin-top:30px;">
+                <h2>Historial de Ventas</h2>
+                <table id="ventasTable" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#f0f0f0;">
+                            <th style="padding:8px; text-align:left;">Cliente</th>
+                            <th style="padding:8px; text-align:left;">Producto</th>
+                            <th style="padding:8px; text-align:left;">Cantidad</th>
+                            <th style="padding:8px; text-align:left;">Monto</th>
+                            <th style="padding:8px; text-align:left;">Forma de Pago</th>
+                            <th style="padding:8px; text-align:left;">Estado</th>
+                            <th style="padding:8px; text-align:left;">Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let selectedClient = null;
+        let productosAgregados = [];
+
+        // Cargar productos al iniciar
+        async function loadProductos() {
+            try {
+                const res = await fetch('/api/productos');
+                const productos = await res.json();
+                const select = document.getElementById('producto');
+                
+                // Limpiar opciones existentes excepto la primera
+                select.innerHTML = '<option value="">Selecciona un producto...</option>';
+                
+                // Agregar productos activos
+                productos.filter(p => p.activo).forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.nombre;
+                    option.textContent = `${p.nombre} - $${p.precio_unitario}`;
+                    option.dataset.precio = p.precio_unitario;
+                    select.appendChild(option);
+                });
+            } catch (err) {
+                console.error('Error cargando productos:', err);
+            }
+        }
+
+        // Búsqueda de clientes
+        document.getElementById('clienteSearch').addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            const resultsDiv = document.getElementById('clienteResults');
+            
+            if (query.length < 1) {
+                resultsDiv.innerHTML = '';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/clientes?q=${encodeURIComponent(query)}`);
+                const clientes = await res.json();
+                
+                if (clientes.length === 0) {
+                    resultsDiv.innerHTML = '<div style="padding:8px;color:#999;">No hay coincidencias</div>';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = clientes.map(c => 
+                    `<div class="result-item" onclick="selectClient(${c.id}, '${c.nombre}', '${c.dirección}')" style="padding:8px;cursor:pointer;border-bottom:1px solid #ddd;">
+                        <strong>${c.nombre}</strong><br>
+                        <small style="color:#666;">${c.dirección || 'Sin dirección'}</small>
+                    </div>`
+                ).join('');
+            } catch (err) {
+                console.error('Error buscando clientes:', err);
+                resultsDiv.innerHTML = '<div style="padding:8px;color:red;">Error al buscar</div>';
+            }
+        });
+
+        // Seleccionar cliente
+        window.selectClient = (id, nombre, direccion) => {
+            selectedClient = { id, nombre, direccion };
+            document.getElementById('clienteId').value = id;
+            document.getElementById('clienteNombre').value = nombre;
+            document.getElementById('clienteDireccion').value = direccion || '';
+            document.getElementById('clienteSearch').value = nombre;
+            document.getElementById('clienteResults').innerHTML = '';
+            document.getElementById('clienteSelected').innerText = nombre;
+            document.getElementById('direccionSelected').innerText = direccion || 'Sin dirección';
+            document.getElementById('direccionForm').value = direccion || '';
+            document.getElementById('clienteInfo').style.display = 'block';
+            document.getElementById('direccionFormGroup').style.display = 'block';
+        };
+
+        // Agregar producto a la lista
+        document.getElementById('agregarProductoBtn').addEventListener('click', () => {
+            if (!selectedClient) {
+                alert('Por favor selecciona un cliente primero');
+                return;
+            }
+            
+            const productoSelect = document.getElementById('producto');
+            const producto = productoSelect.value;
+            const cantidad = parseFloat(document.getElementById('cantidad').value) || 0;
+            let monto = parseFloat(document.getElementById('monto').value) || 0;
+            
+            if (!producto) {
+                alert('Por favor selecciona un producto');
+                return;
+            }
+            
+            if (cantidad <= 0) {
+                alert('Por favor ingresa una cantidad válida');
+                return;
+            }
+            
+            // Si no se especificó monto, calcularlo automáticamente
+            if (monto === 0) {
+                const selectedOption = productoSelect.options[productoSelect.selectedIndex];
+                const precioUnitario = parseFloat(selectedOption.dataset.precio) || 0;
+                monto = precioUnitario * cantidad;
+                document.getElementById('monto').value = monto.toFixed(2);
+            }
+            
+            // Agregar a la lista
+            productosAgregados.push({
+                producto,
+                cantidad,
+                monto: parseFloat(monto)
+            });
+            
+            // Limpiar campos
+            document.getElementById('producto').value = '';
+            document.getElementById('cantidad').value = '1';
+            document.getElementById('monto').value = '';
+            
+            // Actualizar tabla
+            actualizarTablaProductos();
+            
+            // Enfocar en producto
+            document.getElementById('producto').focus();
+        });
+
+        // Actualizar tabla de productos
+        function actualizarTablaProductos() {
+            const tbody = document.getElementById('productosBody');
+            let total = 0;
+            
+            tbody.innerHTML = productosAgregados.map((p, index) => {
+                total += p.monto;
+                return `
+                    <tr style="border-bottom:1px solid #ddd;">
+                        <td style="padding:8px;">${p.producto}</td>
+                        <td style="padding:8px;text-align:center;">${p.cantidad}</td>
+                        <td style="padding:8px;text-align:right;">$${p.monto.toFixed(2)}</td>
+                        <td style="padding:8px;text-align:center;">
+                            <button onclick="eliminarProducto(${index})" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">✕</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            document.getElementById('totalMonto').innerText = total.toFixed(2);
+        }
+
+        // Eliminar producto
+        window.eliminarProducto = (index) => {
+            productosAgregados.splice(index, 1);
+            actualizarTablaProductos();
+        };
+
+        // Cargar historial de ventas
+        async function loadVentas() {
+            try {
+                const res = await fetch('/api/data');
+                if (!res.ok) throw new Error('Error al cargar ventas');
+                
+                const ventas = await res.json();
+                const tbody = document.querySelector('#ventasTable tbody');
+                
+                if (ventas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">Sin ventas registradas</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = ventas.map(v => `
+                    <tr style="border-bottom:1px solid #ddd;">
+                        <td style="padding:8px;">${v.cliente_nombre || 'N/A'}</td>
+                        <td style="padding:8px;">${v.producto || '-'}</td>
+                        <td style="padding:8px;text-align:center;">${v.cantidad || '-'}</td>
+                        <td style="padding:8px;text-align:right;">$${parseFloat(v.monto || 0).toFixed(2)}</td>
+                        <td style="padding:8px;">${formatFormaPago(v.forma_pago)}</td>
+                        <td style="padding:8px;">${v.pagado ? '✓' : '✗'}</td>
+                        <td style="padding:8px;font-size:0.9em;color:#666;">${new Date(v.created_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error cargando ventas:', err);
+            }
+        }
+
+        function formatFormaPago(forma) {
+            const map = {
+                'pago': '✓ Pagó',
+                'no-pago': '✗ No pagó',
+                'cuenta-corriente': '📝 Cuenta Corriente',
+                'transferencia': '💳 Transferencia'
+            };
+            return map[forma] || forma;
+        }
+
+        // Guardar venta (todos los productos)
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            if (!selectedClient) {
+                alert('Por favor selecciona un cliente');
+                return;
+            }
+            
+            if (productosAgregados.length === 0) {
+                alert('Por favor agrega al menos un producto');
+                return;
+            }
+            
+            const formaPago = document.getElementById('formaPago').value;
+            const saldo = parseFloat(document.getElementById('saldo').value) || 0;
+            const pagado = formaPago === 'pago' ? 1 : 0;
+            
+            // Guardar cada producto
+            let guardados = 0;
+            let errores = 0;
+            
+            for (const producto of productosAgregados) {
+                const data = {
+                    cliente_id: selectedClient.id,
+                    cliente_nombre: selectedClient.nombre,
+                    dirección: selectedClient.direccion,
+                    producto: producto.producto,
+                    cantidad: producto.cantidad,
+                    monto: producto.monto,
+                    forma_pago: formaPago,
+                    saldo,
+                    pagado
+                };
+                
+                try {
+                    const res = await fetch('/api/data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (res.ok) {
+                        guardados++;
+                    } else {
+                        errores++;
+                    }
+                } catch (err) {
+                    console.error('Error:', err);
+                    errores++;
+                }
+            }
+            
+            if (errores === 0) {
+                alert(`✓ ${guardados} producto(s) guardado(s) correctamente`);
+                // Limpiar formulario
+                productosAgregados = [];
+                document.getElementById('clienteSearch').value = '';
+                document.getElementById('direccionForm').value = '';
+                document.getElementById('producto').value = '';
+                document.getElementById('cantidad').value = '1';
+                document.getElementById('monto').value = '';
+                document.getElementById('saldo').value = '0';
+                document.getElementById('formaPago').value = 'pago';
+                document.getElementById('clienteInfo').style.display = 'none';
+                document.getElementById('direccionFormGroup').style.display = 'none';
+                document.getElementById('productosBody').innerHTML = '';
+                document.getElementById('totalMonto').innerText = '0.00';
+                selectedClient = null;
+                // Recargar historial
+                loadVentas();
+            } else {
+                alert(`⚠️ Se guardaron ${guardados} producto(s), pero hubo ${errores} error(es)`);
+            }
+        });
+
+        // Cargar datos al abrir la página
+        loadProductos();
+        loadVentas();
+    </script>
+</body>
+</html>

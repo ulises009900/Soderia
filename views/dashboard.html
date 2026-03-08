@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sodería</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/extra-style.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .recent-activity {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .activity-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-time {
+            color: #999;
+            font-size: 0.8em;
+        }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .quick-action-btn {
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #495057;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .quick-action-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+            color: #212529;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Dashboard - Sodería</h1>
+            <a href="/logout" class="logout-link">Cerrar Sesión</a>
+        </header>
+        <main>
+            <!-- Estadísticas Principales -->
+            <section class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalClientes">0</div>
+                    <div class="stat-label">Clientes Activos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalProductos">0</div>
+                    <div class="stat-label">Productos Activos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="ventasHoy">0</div>
+                    <div class="stat-label">Ventas Hoy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="ingresosHoy">$0.00</div>
+                    <div class="stat-label">Ingresos Hoy</div>
+                </div>
+            </section>
+
+            <!-- Acciones Rápidas -->
+            <section class="quick-actions">
+                <a href="/admin" class="quick-action-btn">
+                    ⚙️ Administración
+                </a>
+                <a href="/pc" class="quick-action-btn">
+                    💻 Modo PC
+                </a>
+                <a href="/movil" class="quick-action-btn">
+                    📱 Modo Móvil
+                </a>
+                <a href="/selector" class="quick-action-btn">
+                    🔄 Cambiar Modo
+                </a>
+            </section>
+
+            <!-- Actividad Reciente -->
+            <section class="recent-activity">
+                <h2>📈 Actividad Reciente</h2>
+                <div id="recentActivity">
+                    <div class="activity-item">
+                        <span>Cargando actividad...</span>
+                        <span class="activity-time">-</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Enlaces de Navegación -->
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="/selector" class="btn btn-secondary">← Volver al selector</a>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                // Cargar estadísticas
+                const [clientesRes, productosRes, ventasRes] = await Promise.all([
+                    fetch('/api/clientes'),
+                    fetch('/api/productos'),
+                    fetch('/api/data')
+                ]);
+
+                const clientes = await clientesRes.json();
+                const productos = await productosRes.json();
+                const ventas = await ventasRes.json();
+
+                // Calcular estadísticas
+                const clientesActivos = clientes.filter(c => c.activo).length;
+                const productosActivos = productos.filter(p => p.activo).length;
+
+                // Ventas de hoy
+                const hoy = new Date().toISOString().split('T')[0];
+                const ventasHoy = ventas.filter(v => v.created_at && v.created_at.startsWith(hoy)).length;
+                const ingresosHoy = ventas
+                    .filter(v => v.created_at && v.created_at.startsWith(hoy))
+                    .reduce((sum, v) => sum + parseFloat(v.monto || 0), 0);
+
+                // Actualizar UI
+                document.getElementById('totalClientes').textContent = clientesActivos;
+                document.getElementById('totalProductos').textContent = productosActivos;
+                document.getElementById('ventasHoy').textContent = ventasHoy;
+                document.getElementById('ingresosHoy').textContent = `$${ingresosHoy.toFixed(2)}`;
+
+                // Actividad reciente
+                const actividadReciente = ventas
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 5);
+
+                const activityHtml = actividadReciente.length > 0
+                    ? actividadReciente.map(v => `
+                        <div class="activity-item">
+                            <span>Venta: ${v.producto || 'Producto'} - $${parseFloat(v.monto || 0).toFixed(2)}</span>
+                            <span class="activity-time">${new Date(v.created_at).toLocaleString()}</span>
+                        </div>
+                    `).join('')
+                    : '<div class="activity-item"><span>No hay actividad reciente</span><span class="activity-time">-</span></div>';
+
+                document.getElementById('recentActivity').innerHTML = activityHtml;
+
+            } catch (err) {
+                console.error('Error cargando dashboard:', err);
+                document.getElementById('recentActivity').innerHTML =
+                    '<div class="activity-item"><span>Error al cargar datos</span><span class="activity-time">-</span></div>';
+            }
+        }
+
+        // Cargar dashboard al iniciar
+        loadDashboard();
+
+        // Actualizar cada 30 segundos
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>

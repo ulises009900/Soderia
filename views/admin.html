@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración - Sodería</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/extra-style.css">
+    <style>
+        .status-active { color: green; font-weight: bold; }
+        .status-inactive { color: red; font-weight: bold; }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: #3498db;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #219a52; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Administración de Sodería</h1>
+            <a href="/logout" class="logout-link">Cerrar Sesión</a>
+        </header>
+        <main>
+            <nav style="margin-bottom:20px;">
+                <button id="btnClientes" class="btn btn-primary">👥 Gestionar Clientes</button>
+                <button id="btnProductos" class="btn btn-secondary">📦 Gestionar Productos</button>
+                <a href="/pc" class="btn btn-secondary">📊 Ver Ventas</a>
+                <a href="/selector" class="btn btn-secondary">← Volver al selector</a>
+            </nav>
+
+            <!-- Sección Clientes -->
+            <section id="clientesSection" class="admin-section">
+                <h2>👥 Gestión de Clientes</h2>
+
+                <!-- Formulario Nuevo Cliente -->
+                <div class="form-section" style="margin-bottom:30px;">
+                    <h3>Agregar Nuevo Cliente</h3>
+                    <div class="form-group">
+                        <label>Nombre:</label>
+                        <input type="text" id="clienteNombre" placeholder="Nombre del cliente">
+                    </div>
+                    <div class="form-group">
+                        <label>Dirección:</label>
+                        <input type="text" id="clienteDireccion" placeholder="Dirección completa">
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono:</label>
+                        <input type="text" id="clienteTelefono" placeholder="Número de teléfono">
+                    </div>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" id="clienteEmail" placeholder="correo@ejemplo.com">
+                    </div>
+                    <button id="agregarClienteBtn" class="btn btn-primary">➕ Agregar Cliente</button>
+                </div>
+
+                <!-- Lista de Clientes -->
+                <div class="data-section">
+                    <h3>Lista de Clientes</h3>
+                    <table id="clientesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Nombre</th><th>Dirección</th><th>Teléfono</th><th>Email</th><th>Saldo</th><th>Estado</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Sección Productos -->
+            <section id="productosSection" class="admin-section" style="display:none;">
+                <h2>📦 Gestión de Productos</h2>
+
+                <!-- Formulario Nuevo Producto -->
+                <div class="form-section" style="margin-bottom:30px;">
+                    <h3>Agregar Nuevo Producto</h3>
+                    <div class="form-group">
+                        <label>Nombre:</label>
+                        <input type="text" id="productoNombre" placeholder="Nombre del producto">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción:</label>
+                        <textarea id="productoDescripcion" rows="2" placeholder="Descripción del producto"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Unitario ($):</label>
+                        <input type="number" id="productoPrecio" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Stock Inicial:</label>
+                        <input type="number" id="productoStock" min="0" placeholder="0">
+                    </div>
+                    <button id="agregarProductoBtn" class="btn btn-primary">➕ Agregar Producto</button>
+                </div>
+
+                <!-- Lista de Productos -->
+                <div class="data-section">
+                    <h3>Lista de Productos</h3>
+                    <table id="productosTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Modal Editar Cliente -->
+            <div id="editarClienteModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>✏️ Editar Cliente</h3>
+                        <span class="close" onclick="cerrarModal('editarClienteModal')">&times;</span>
+                    </div>
+                    <form id="editarClienteForm">
+                        <input type="hidden" id="editClienteId">
+                        <div class="form-group">
+                            <label>Nombre:</label>
+                            <input type="text" id="editClienteNombre" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Dirección:</label>
+                                <input type="text" id="editClienteDireccion">
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono:</label>
+                                <input type="text" id="editClienteTelefono">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Email:</label>
+                                <input type="email" id="editClienteEmail">
+                            </div>
+                            <div class="form-group">
+                                <label>Estado:</label>
+                                <select id="editClienteActivo">
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-secondary" onclick="cerrarModal('editarClienteModal')">Cancelar</button>
+                            <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal Editar Producto -->
+            <div id="editarProductoModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>✏️ Editar Producto</h3>
+                        <span class="close" onclick="cerrarModal('editarProductoModal')">&times;</span>
+                    </div>
+                    <form id="editarProductoForm">
+                        <input type="hidden" id="editProductoId">
+                        <div class="form-group">
+                            <label>Nombre:</label>
+                            <input type="text" id="editProductoNombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción:</label>
+                            <textarea id="editProductoDescripcion" rows="2"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Precio Unitario ($):</label>
+                                <input type="number" id="editProductoPrecio" step="0.01" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Stock:</label>
+                                <input type="number" id="editProductoStock" min="0" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado:</label>
+                            <select id="editProductoActivo">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-secondary" onclick="cerrarModal('editarProductoModal')">Cancelar</button>
+                            <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Navegación entre secciones
+        document.getElementById('btnClientes').addEventListener('click', () => {
+            document.getElementById('clientesSection').style.display = 'block';
+            document.getElementById('productosSection').style.display = 'none';
+            document.getElementById('btnClientes').className = 'btn btn-primary';
+            document.getElementById('btnProductos').className = 'btn btn-secondary';
+            loadClientes();
+        });
+
+        document.getElementById('btnProductos').addEventListener('click', () => {
+            document.getElementById('clientesSection').style.display = 'none';
+            document.getElementById('productosSection').style.display = 'block';
+            document.getElementById('btnClientes').className = 'btn btn-secondary';
+            document.getElementById('btnProductos').className = 'btn btn-primary';
+            loadProductos();
+        });
+
+        // Gestión de Clientes
+        async function loadClientes() {
+            try {
+                const res = await fetch('/api/clientes');
+                const clientes = await res.json();
+                const tbody = document.querySelector('#clientesTable tbody');
+                tbody.innerHTML = clientes.map(c => `
+                    <tr>
+                        <td>${c.id}</td>
+                        <td>${c.nombre}</td>
+                        <td>${c.direccion || '-'}</td>
+                        <td>${c.telefono || '-'}</td>
+                        <td>${c.email || '-'}</td>
+                        <td>$${parseFloat(c.saldo_total || 0).toFixed(2)}</td>
+                        <td><span class="status-${c.activo ? 'active' : 'inactive'}">${c.activo ? 'Activo' : 'Inactivo'}</span></td>
+                        <td>
+                            <button onclick="editarCliente(${c.id})">✏️</button>
+                            <button onclick="toggleCliente(${c.id}, ${c.activo})">${c.activo ? '🚫' : '✅'}</button>
+                            <button onclick="eliminarCliente(${c.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error cargando clientes:', err);
+            }
+        }
+
+        document.getElementById('agregarClienteBtn').addEventListener('click', async () => {
+            const nombre = document.getElementById('clienteNombre').value.trim();
+            const direccion = document.getElementById('clienteDireccion').value.trim();
+            const telefono = document.getElementById('clienteTelefono').value.trim();
+            const email = document.getElementById('clienteEmail').value.trim();
+
+            if (!nombre) {
+                alert('Por favor ingresa el nombre del cliente');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/clientes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, direccion, telefono, email })
+                });
+
+                if (res.ok) {
+                    alert('✓ Cliente agregado correctamente');
+                    // Limpiar formulario
+                    document.getElementById('clienteNombre').value = '';
+                    document.getElementById('clienteDireccion').value = '';
+                    document.getElementById('clienteTelefono').value = '';
+                    document.getElementById('clienteEmail').value = '';
+                    loadClientes();
+                } else {
+                    alert('Error al agregar cliente');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
+            }
+        });
+
+        // Gestión de Productos
+        async function loadProductos() {
+            try {
+                const res = await fetch('/api/productos');
+                const productos = await res.json();
+                const tbody = document.querySelector('#productosTable tbody');
+                tbody.innerHTML = productos.map(p => `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.nombre}</td>
+                        <td>${p.descripcion || '-'}</td>
+                        <td>$${parseFloat(p.precio_unitario || 0).toFixed(2)}</td>
+                        <td>${p.stock || 0}</td>
+                        <td><span class="status-${p.activo ? 'active' : 'inactive'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
+                        <td>
+                            <button onclick="editarProducto(${p.id})">✏️</button>
+                            <button onclick="toggleProducto(${p.id}, ${p.activo})">${p.activo ? '🚫' : '✅'}</button>
+                            <button onclick="eliminarProducto(${p.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error cargando productos:', err);
+            }
+        }
+
+        document.getElementById('agregarProductoBtn').addEventListener('click', async () => {
+            const nombre = document.getElementById('productoNombre').value.trim();
+            const descripcion = document.getElementById('productoDescripcion').value.trim();
+            const precio_unitario = parseFloat(document.getElementById('productoPrecio').value) || 0;
+            const stock = parseInt(document.getElementById('productoStock').value) || 0;
+
+            if (!nombre) {
+                alert('Por favor ingresa el nombre del producto');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/productos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, descripcion, precio_unitario, stock })
+                });
+
+                if (res.ok) {
+                    alert('✓ Producto agregado correctamente');
+                    // Limpiar formulario
+                    document.getElementById('productoNombre').value = '';
+                    document.getElementById('productoDescripcion').value = '';
+                    document.getElementById('productoPrecio').value = '';
+                    document.getElementById('productoStock').value = '';
+                    loadProductos();
+                } else {
+                    alert('Error al agregar producto');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
+            }
+        });
+
+        // Funciones de edición y eliminación
+        async function editarCliente(id) {
+            try {
+                const res = await fetch(`/api/clientes/${id}`);
+                const cliente = await res.json();
+
+                // Llenar el modal con datos del cliente
+                document.getElementById('editClienteId').value = cliente.id;
+                document.getElementById('editClienteNombre').value = cliente.nombre;
+                document.getElementById('editClienteDireccion').value = cliente.direccion || '';
+                document.getElementById('editClienteTelefono').value = cliente.telefono || '';
+                document.getElementById('editClienteEmail').value = cliente.email || '';
+                document.getElementById('editClienteActivo').value = cliente.activo ? '1' : '0';
+
+                // Mostrar modal
+                document.getElementById('editarClienteModal').style.display = 'block';
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al cargar datos del cliente');
+            }
+        }
+
+        async function toggleCliente(id, currentActivo) {
+            const action = currentActivo ? 'desactivar' : 'activar';
+            if (!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este cliente?`)) return;
+            
+            try {
+                const res = await fetch(`/api/clientes/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ activo: !currentActivo })
+                });
+                
+                if (res.ok) {
+                    alert(`✓ Cliente ${action}do correctamente`);
+                    loadClientes();
+                } else {
+                    alert(`Error al ${action} cliente`);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
+            }
+        }
+
+        async function eliminarCliente(id) {
+            if (!confirm('¿Eliminar este cliente permanentemente? Esta acción no se puede deshacer.')) return;
+            
+            try {
+                const res = await fetch(`/api/clientes/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (res.ok) {
+                    alert('✓ Cliente eliminado correctamente');
+                    loadClientes();
+                } else {
+                    alert('Error al eliminar cliente');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
+            }
+        }
+
+        async function editarProducto(id) {
+            try {
+                const res = await fetch(`/api/productos/${id}`);
+                const producto = await res.json();
+
+                // Llenar el modal con datos del producto
+                document.getElementById('editProductoId').value = producto.id;
+                document.getElementById('editProductoNombre').value = producto.nombre;
+                document.getElementById('editProductoDescripcion').value = producto.descripcion || '';
+                document.getElementById('editProductoPrecio').value = producto.precio_unitario;
+                document.getElementById('editProductoStock').value = producto.stock;
+                document.getElementById('editProductoActivo').value = producto.activo ? '1' : '0';
+
+                // Mostrar modal
+                document.getElementById('editarProductoModal').style.display = 'block';
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al cargar datos del producto');
+            }
+        }
+
+        async function toggleProducto(id, currentActivo) {
+            const action = currentActivo ? 'desactivar' : 'activar';
+            if (!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este producto?`)) return;
+            
+            try {
+                const res = await fetch(`/api/productos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ activo: !currentActivo })
+                });
+                
+                if (res.ok) {
+                    alert(`✓ Producto ${action}do correctamente`);
+                    loadProductos();
+                } else {
+                    alert(`Error al ${action} producto`);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
+            }
+        }
+
+        async function eliminarProducto(id) {
+            if (!confirm('¿Eliminar este producto permanentemente? Esta acción no se puede deshacer.')) return;
+            
+            try {
+                const res = await fetch(`/api/productos/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (res.ok) {
+                    alert('✓ Producto eliminado correctamente');
+                    loadProductos();
+                } else {
+                    alert('Error al eliminar producto');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
+            }
+        }
+
+        // Funciones para modales
+        function cerrarModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modals = ['editarClienteModal', 'editarProductoModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Manejar envío del formulario de editar cliente
+        document.getElementById('editarClienteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('editClienteId').value;
+            const nombre = document.getElementById('editClienteNombre').value.trim();
+            const direccion = document.getElementById('editClienteDireccion').value.trim();
+            const telefono = document.getElementById('editClienteTelefono').value.trim();
+            const email = document.getElementById('editClienteEmail').value.trim();
+            const activo = document.getElementById('editClienteActivo').value === '1';
+
+            if (!nombre) {
+                alert('El nombre es obligatorio');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/clientes/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, direccion, telefono, email, activo })
+                });
+
+                if (res.ok) {
+                    alert('✓ Cliente actualizado correctamente');
+                    cerrarModal('editarClienteModal');
+                    loadClientes();
+                } else {
+                    alert('Error al actualizar cliente');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
+            }
+        });
+
+        // Manejar envío del formulario de editar producto
+        document.getElementById('editarProductoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('editProductoId').value;
+            const nombre = document.getElementById('editProductoNombre').value.trim();
+            const descripcion = document.getElementById('editProductoDescripcion').value.trim();
+            const precio_unitario = parseFloat(document.getElementById('editProductoPrecio').value);
+            const stock = parseInt(document.getElementById('editProductoStock').value);
+            const activo = document.getElementById('editProductoActivo').value === '1';
+
+            if (!nombre) {
+                alert('El nombre es obligatorio');
+                return;
+            }
+
+            if (isNaN(precio_unitario) || precio_unitario < 0) {
+                alert('El precio debe ser un número válido mayor o igual a 0');
+                return;
+            }
+
+            if (isNaN(stock) || stock < 0) {
+                alert('El stock debe ser un número válido mayor o igual a 0');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/productos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, descripcion, precio_unitario, stock, activo })
+                });
+
+                if (res.ok) {
+                    alert('✓ Producto actualizado correctamente');
+                    cerrarModal('editarProductoModal');
+                    loadProductos();
+                } else {
+                    alert('Error al actualizar producto');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
+            }
+        });
+
+        // Cargar clientes por defecto
+        loadClientes();
+    </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modo PC - Administración</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/extra-style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Modo PC (Administración)</h1>
+            <a href="/logout" class="logout-link">Cerrar Sesión</a>
+        </header>
+        <main>
+            <section class="data-section">
+                <h2>Gestión de Ventas</h2>
+                
+                <!-- Filtros -->
+                <div style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <input type="text" id="filterCliente" placeholder="Filtrar por cliente..." style="flex:1; min-width:200px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <select id="filterPago" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+                        <option value="">Todos los estados</option>
+                        <option value="pago">✓ Pagó</option>
+                        <option value="no-pago">✗ No pagó</option>
+                        <option value="cuenta-corriente">📝 Cuenta Corriente</option>
+                        <option value="transferencia">💳 Transferencia</option>
+                    </select>
+                    <button id="filterBtn" class="btn btn-primary" style="padding:8px 15px;">Filtrar</button>
+                </div>
+                
+                <table id="dataTable" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#f0f0f0;">
+                            <th style="padding:10px; text-align:left;">ID</th>
+                            <th style="padding:10px; text-align:left;">Cliente</th>
+                            <th style="padding:10px; text-align:left;">Dirección</th>
+                            <th style="padding:10px; text-align:left;">Producto</th>
+                            <th style="padding:10px; text-align:left;">Cantidad</th>
+                            <th style="padding:10px; text-align:right;">Monto</th>
+                            <th style="padding:10px; text-align:right;">Saldo</th>
+                            <th style="padding:10px; text-align:left;">Forma de Pago</th>
+                            <th style="padding:10px; text-align:center;">Pagado</th>
+                            <th style="padding:10px; text-align:left;">Fecha</th>
+                            <th style="padding:10px; text-align:center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <a href="/selector" style="display:block;margin-top:20px;">← Volver al selector</a>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let allVentas = [];
+
+        function formatFormaPago(forma) {
+            const map = {
+                'pago': '✓ Pagó',
+                'no-pago': '✗ No pagó',
+                'cuenta-corriente': '📝 Cuenta Corriente',
+                'transferencia': '💳 Transferencia'
+            };
+            return map[forma] || forma;
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch('/api/data');
+                if (!res.ok) throw new Error('Error cargando datos');
+                
+                allVentas = await res.json();
+                renderTable(allVentas);
+            } catch (err) {
+                console.error('Error:', err);
+                document.querySelector('#dataTable tbody').innerHTML = 
+                    '<tr><td colspan="11" style="padding:20px;text-align:center;color:red;">Error al cargar datos</td></tr>';
+            }
+        }
+
+        function renderTable(ventas) {
+            const tbody = document.querySelector('#dataTable tbody');
+            
+            if (ventas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" style="padding:20px;text-align:center;color:#999;">Sin ventas registradas</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = ventas.map(v => `
+                <tr style="border-bottom:1px solid #ddd;">
+                    <td style="padding:10px;">${v.id}</td>
+                    <td style="padding:10px;">${v.cliente_nombre || 'N/A'}</td>
+                    <td style="padding:10px;">${v.dirección || '-'}</td>
+                    <td style="padding:10px;">${v.producto || '-'}</td>
+                    <td style="padding:10px;text-align:center;">${v.cantidad || '-'}</td>
+                    <td style="padding:10px;text-align:right;">$${parseFloat(v.monto || 0).toFixed(2)}</td>
+                    <td style="padding:10px;text-align:right;">$${parseFloat(v.saldo || 0).toFixed(2)}</td>
+                    <td style="padding:10px;">${formatFormaPago(v.forma_pago)}</td>
+                    <td style="padding:10px;text-align:center;">${v.pagado ? '✓' : '✗'}</td>
+                    <td style="padding:10px;font-size:0.9em;color:#666;">${new Date(v.created_at).toLocaleDateString()}</td>
+                    <td style="padding:10px;text-align:center;">
+                        <button onclick="editVenta(${v.id})" style="margin-right:5px; padding:5px 10px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer;">✏️</button>
+                        <button onclick="delVenta(${v.id})" style="padding:5px 10px; background:#e74c3c; color:white; border:none; border-radius:4px; cursor:pointer;">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function applyFilters() {
+            const clienteFilter = document.getElementById('filterCliente').value.toLowerCase();
+            const pagoFilter = document.getElementById('filterPago').value;
+            
+            const filtered = allVentas.filter(v => {
+                const clienteMatch = !clienteFilter || (v.cliente_nombre || '').toLowerCase().includes(clienteFilter);
+                const pagoMatch = !pagoFilter || v.forma_pago === pagoFilter;
+                return clienteMatch && pagoMatch;
+            });
+            
+            renderTable(filtered);
+        }
+
+        async function editVenta(id) {
+            const venta = allVentas.find(v => v.id === id);
+            if (!venta) return;
+            
+            const newProducto = prompt('Producto:', venta.producto);
+            if (newProducto === null) return;
+            
+            const newCantidad = prompt('Cantidad:', venta.cantidad);
+            if (newCantidad === null) return;
+            
+            const newMonto = prompt('Monto:', venta.monto);
+            if (newMonto === null) return;
+            
+            try {
+                const res = await fetch('/api/data/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        producto: newProducto,
+                        cantidad: parseFloat(newCantidad),
+                        monto: parseFloat(newMonto),
+                        forma_pago: venta.forma_pago,
+                        saldo: venta.saldo || 0,
+                        pagado: venta.pagado
+                    })
+                });
+                
+                if (res.ok) {
+                    alert('✓ Venta actualizada');
+                    loadData();
+                } else {
+                    alert('Error al actualizar');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicate con el servidor');
+            }
+        }
+
+        async function delVenta(id) {
+            if (!confirm('¿Eliminar esta venta?')) return;
+            
+            try {
+                const res = await fetch('/api/data/' + id, { method: 'DELETE' });
+                if (res.ok) {
+                    alert('✓ Venta eliminada');
+                    loadData();
+                } else {
+                    alert('Error al eliminar');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error al comunicarse con el servidor');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('filterBtn').addEventListener('click', applyFilters);
+        document.getElementById('filterCliente').addEventListener('keyup', applyFilters);
+        document.getElementById('filterPago').addEventListener('change', applyFilters);
+
+        // Cargar datos al abrir la página
+        loadData();
+    </script>
+</body>
+</html>
