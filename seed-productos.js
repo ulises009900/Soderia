@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const pool = require('./db-config');
 
 // Productos típicos de una sodería
 const productos = [
@@ -19,53 +19,43 @@ const productos = [
     { nombre: 'Agua con Gas 1L', descripcion: 'Agua gasificada 1 litro', precio_unitario: 32, stock: 55 }
 ];
 
-const db = new sqlite3.Database('soderia.db', (err) => {
-    if (err) {
-        console.error('Error conectando a la base de datos:', err.message);
-        process.exit(1);
-    }
-    console.log('Conectado a la base de datos soderia.db');
-});
+async function seedProductos() {
+    const client = await pool.connect();
+    let inserted = 0;
+    let duplicated = 0;
 
-let inserted = 0;
-let duplicated = 0;
+    try {
+        console.log('Conectado a PostgreSQL. Insertando productos...');
 
-db.serialize(() => {
-    productos.forEach(producto => {
-        db.run(
-            `INSERT INTO productos (nombre, descripcion, precio_unitario, stock) VALUES (?, ?, ?, ?)`,
-            [producto.nombre, producto.descripcion, producto.precio_unitario, producto.stock],
-            function(err) {
-                if (err) {
-                    if (err.message.includes('UNIQUE constraint failed')) {
-                        console.log(`⚠️  ${producto.nombre} - Ya existe`);
-                        duplicated++;
-                    } else {
-                        console.error(`❌ Error insertando ${producto.nombre}:`, err.message);
-                    }
-                } else {
-                    console.log(`✓ ${producto.nombre} - Insertado (ID: ${this.lastID})`);
-                    inserted++;
-                }
-            }
-        );
-    });
+        for (const producto of productos) {
+            const result = await client.query(
+                `INSERT INTO productos (nombre, descripcion, precio_unitario, stock)
+                 VALUES ($1, $2, $3, $4)
+                 ON CONFLICT (nombre) DO NOTHING
+                 RETURNING id`,
+                [producto.nombre, producto.descripcion, producto.precio_unitario, producto.stock]
+            );
 
-    // Mostrar resumen después de 1 segundo
-    setTimeout(() => {
-        db.get('SELECT COUNT(*) as total FROM productos', (err, row) => {
-            if (err) {
-                console.error('Error consultando total:', err);
+            if (result.rowCount > 0) {
+                console.log(`✓ ${producto.nombre} - Insertado (ID: ${result.rows[0].id})`);
+                inserted++;
             } else {
-                console.log(`\n✅ Resumen: ${inserted} productos insertados, ${duplicated} duplicados`);
-                console.log(`📊 Total de productos en la base de datos: ${row.total}`);
-                db.close((err) => {
-                    if (err) {
-                        console.error('Error cerrando base de datos:', err);
-                    }
-                    process.exit(0);
-                });
+                console.log(`! ${producto.nombre} - Ya existe`);
+                duplicated++;
             }
-        });
-    }, 500);
-});
+        }
+
+        const totalResult = await client.query('SELECT COUNT(*)::int AS total FROM productos');
+        console.log(`\nResumen: ${inserted} productos insertados, ${duplicated} duplicados`);
+        console.log(`Total de productos en la base de datos: ${totalResult.rows[0].total}`);
+        process.exit(0);
+    } catch (error) {
+        console.error('Error insertando productos:', error.message);
+        process.exit(1);
+    } finally {
+        client.release();
+        await pool.end();
+    }
+}
+
+seedProductos();

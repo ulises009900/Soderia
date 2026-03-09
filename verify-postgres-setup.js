@@ -64,7 +64,8 @@ function checkDependencies() {
         }
         
         if (deps.sqlite3) {
-            log(`⚠ Dependencia 'sqlite3' aún presente (puedes removerla si quieres)`, 'yellow');
+            log(`✗ Dependencia 'sqlite3' detectada: remuévela para usar solo PostgreSQL`, 'red');
+            ok = false;
         }
         
         return ok;

@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const pool = require('./db-config');
 
 // Clientes de ejemplo para una sodería
 const clientes = [
@@ -64,53 +64,43 @@ const clientes = [
     }
 ];
 
-const db = new sqlite3.Database('soderia.db', (err) => {
-    if (err) {
-        console.error('Error conectando a la base de datos:', err.message);
-        process.exit(1);
-    }
-    console.log('Conectado a la base de datos soderia.db');
-});
+async function seedClientes() {
+    const client = await pool.connect();
+    let inserted = 0;
+    let duplicated = 0;
 
-let inserted = 0;
-let duplicated = 0;
+    try {
+        console.log('Conectado a PostgreSQL. Insertando clientes...');
 
-db.serialize(() => {
-    clientes.forEach(cliente => {
-        db.run(
-            `INSERT INTO clientes (nombre, direccion, telefono, email) VALUES (?, ?, ?, ?)`,
-            [cliente.nombre, cliente.direccion, cliente.telefono, cliente.email],
-            function(err) {
-                if (err) {
-                    if (err.message.includes('UNIQUE constraint failed')) {
-                        console.log(`⚠️  ${cliente.nombre} - Ya existe`);
-                        duplicated++;
-                    } else {
-                        console.error(`❌ Error insertando ${cliente.nombre}:`, err.message);
-                    }
-                } else {
-                    console.log(`✓ ${cliente.nombre} - Insertado (ID: ${this.lastID})`);
-                    inserted++;
-                }
-            }
-        );
-    });
+        for (const cliente of clientes) {
+            const result = await client.query(
+                `INSERT INTO clientes (nombre, direccion, telefono, email)
+                 VALUES ($1, $2, $3, $4)
+                 ON CONFLICT (nombre) DO NOTHING
+                 RETURNING id`,
+                [cliente.nombre, cliente.direccion, cliente.telefono, cliente.email]
+            );
 
-    // Mostrar resumen después de 1 segundo
-    setTimeout(() => {
-        db.get('SELECT COUNT(*) as total FROM clientes', (err, row) => {
-            if (err) {
-                console.error('Error consultando total:', err);
+            if (result.rowCount > 0) {
+                console.log(`✓ ${cliente.nombre} - Insertado (ID: ${result.rows[0].id})`);
+                inserted++;
             } else {
-                console.log(`\n✅ Resumen: ${inserted} clientes insertados, ${duplicated} duplicados`);
-                console.log(`📊 Total de clientes en la base de datos: ${row.total}`);
-                db.close((err) => {
-                    if (err) {
-                        console.error('Error cerrando base de datos:', err);
-                    }
-                    process.exit(0);
-                });
+                console.log(`! ${cliente.nombre} - Ya existe`);
+                duplicated++;
             }
-        });
-    }, 500);
-});
+        }
+
+        const totalResult = await client.query('SELECT COUNT(*)::int AS total FROM clientes');
+        console.log(`\nResumen: ${inserted} clientes insertados, ${duplicated} duplicados`);
+        console.log(`Total de clientes en la base de datos: ${totalResult.rows[0].total}`);
+        process.exit(0);
+    } catch (error) {
+        console.error('Error insertando clientes:', error.message);
+        process.exit(1);
+    } finally {
+        client.release();
+        await pool.end();
+    }
+}
+
+seedClientes();
