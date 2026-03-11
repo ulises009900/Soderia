@@ -7,21 +7,59 @@ const isProduction = process.env.NODE_ENV === 'production';
 const isRender = process.env.RENDER === 'true' ||
     Boolean(process.env.RENDER_SERVICE_ID) ||
     Boolean(process.env.RENDER_EXTERNAL_HOSTNAME);
-const databaseUrl = (process.env.DATABASE_URL || '').trim();
+const directDatabaseUrl = (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.RENDER_DATABASE_URL ||
+    ''
+).trim();
+
+function buildConnectionStringFromParts() {
+    const user = (process.env.PGUSER || process.env.DB_USER || '').trim();
+    const password = (process.env.PGPASSWORD || process.env.DB_PASSWORD || '').trim();
+    const host = (process.env.PGHOST || process.env.DB_HOST || '').trim();
+    const port = (process.env.PGPORT || process.env.DB_PORT || '5432').trim();
+    const database = (process.env.PGDATABASE || process.env.DB_NAME || '').trim();
+
+    if (!user || !host || !database) {
+        return '';
+    }
+
+    const encodedUser = encodeURIComponent(user);
+    const encodedPassword = encodeURIComponent(password);
+    const auth = password ? `${encodedUser}:${encodedPassword}` : encodedUser;
+    return `postgresql://${auth}@${host}:${port}/${database}`;
+}
+
+const databaseUrl = directDatabaseUrl || buildConnectionStringFromParts();
 const hasDatabaseUrl = databaseUrl.length > 0;
 
+function buildSslConfig() {
+    const sslMode = (process.env.PGSSLMODE || '').toLowerCase();
+    if (sslMode === 'disable') return false;
+    if (sslMode === 'no-verify') return { rejectUnauthorized: false };
+
+    // Por defecto en Render/produccion usamos SSL tolerante para certificados administrados.
+    if (isRender || isProduction) return { rejectUnauthorized: false };
+
+    return false;
+}
+
 if (hasDatabaseUrl) {
-    // En Render, usar DATABASE_URL directamente
+    const ssl = buildSslConfig();
     pool = new Pool({
         connectionString: databaseUrl,
-        ssl: {
-            rejectUnauthorized: false // Necesario para Render
-        }
+        ssl
     });
-    console.log('DB config: usando DATABASE_URL');
+    try {
+        const host = new URL(databaseUrl).hostname;
+        console.log(`DB config: usando URL para host ${host}`);
+    } catch {
+        console.log('DB config: usando URL de conexion');
+    }
 } else {
     if (isProduction || isRender) {
-        console.error('Falta DATABASE_URL en Render/produccion. Configura esta variable en el servicio.');
+        console.error('Falta URL de PostgreSQL en Render/produccion (DATABASE_URL/POSTGRES_URL o PG*).');
         process.exit(1);
     }
 
